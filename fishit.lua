@@ -1,6 +1,6 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
--------- [[ CATRAZ THEME SETUP ]] --------
+-------- [[ Demon THEME SETUP ]] --------
 WindUI:AddTheme({
     Name = "Native Red",
     Accent = Color3.fromHex("#ff5e5e"), 
@@ -36,8 +36,8 @@ WindUI:AddTheme({
 WindUI:SetTheme("Native Red")
 
 local Window = WindUI:CreateWindow({
-    Title = "Catraz Hub |Vyn HUB | Fish It!",
-    Folder = "CatrazHub",
+    Title = "Demon Hub | Fish It!",
+    Folder = "DemonHub",
     Icon = "rbxassetid://124162045221605", 
     NewElements = true,
     Transparent = true,
@@ -54,25 +54,20 @@ local Window = WindUI:CreateWindow({
 
 -- [[ 1. VERSION TAG (BETA) ]] --
 Window:Tag({
-    Title = "v4.0-BETA",
+    Title = "V1",
     Icon = "github", -- Ikon Github
     Color = Color3.fromHex("#4a4a4a"), -- Warna Hijau Stabilo
 })
 
-Window:Tag({
-    Title = "Premium",
-    Color = Color3.fromHex("#b80202"), -- Warna Hijau Stabilo
-})
 
 Window:DisableTopbarButtons({
-    "Close", 
     "Minimize", 
     "Fullscreen",
 })
 
 WindUI:Notify({
-    Title = "Catraz Hub Loaded",
-    Content = "Success load Catraz Hub | FISH IT!",
+    Title = "Demon Hub Loaded",
+    Content = "Success load Demon Hub | FISH IT!",
     Duration = 5,
     Icon = "badge-check", 
 })
@@ -85,7 +80,7 @@ task.spawn(function()
     local UserInputService = game:GetService("UserInputService") -- Tambahan Service
     local Stats = game:GetService("Stats")
     
-    local NameUI = "CatrazHubSystem"
+    local NameUI = "DemonHubSystem"
     if CoreGui:FindFirstChild(NameUI) then CoreGui[NameUI]:Destroy() end
     
     local ScreenGui = Instance.new("ScreenGui")
@@ -208,7 +203,7 @@ task.spawn(function()
     TitleLabel.Position = UDim2.new(0, 15, 0, 5)
     TitleLabel.Size = UDim2.new(1, -20, 0, 20)
     TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.Text = "CATRAZ HUB | <font color='#ff5e5e'>FISH IT!</font>"
+    TitleLabel.Text = "Demon HUB | <font color='#ff5e5e'>FISH IT!</font>"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -268,21 +263,21 @@ task.spawn(function()
 end)
 
 -- [[ 1. CONFIGURATION SYSTEM SETUP ]] --
-local CatrazHubConfig = Window.ConfigManager:CreateConfig("catrazhub")
+local DemonHubConfig = Window.ConfigManager:CreateConfig("Demonhub")
 
 -- [BARU] Tabel untuk menyimpan semua elemen UI agar bisa dicek valuenya
 local ElementRegistry = {} 
 
 -- Fungsi Helper Reg yang sudah di-upgrade
 local function Reg(id, element)
-    CatrazHubConfig:Register(id, element)
+    DemonHubConfig:Register(id, element)
     -- Simpan elemen ke tabel lokal kita
     ElementRegistry[id] = element 
     return element
 end
 
 local HttpService = game:GetService("HttpService")
-local BaseFolder = "WindUI/" .. (Window.Folder or "CatrazHub") .. "/config/"
+local BaseFolder = "WindUI/" .. (Window.Folder or "DemonHub") .. "/config/"
 
 local function SmartLoadConfig(configName)
     local path = BaseFolder .. configName .. ".json"
@@ -422,7 +417,7 @@ pcall(function()
     for i, v in pairs(getconnections(player.Idled)) do
         if v.Disable then
             v:Disable() -- Menonaktifkan koneksi event
-            print("[CatrazHub Anti-AFK] ON")
+            print("[DemonHub Anti-AFK] ON")
         end
     end
 end)
@@ -529,13 +524,13 @@ do
         Promise = require(RepStorage:WaitForChild("Packages").Promise)
     end)
     
-    _G.CatrazHub = false 
+    _G.DemonHub = false 
 
     if PromptController and PromptController.FirePrompt and Promise then
         local oldFirePrompt = PromptController.FirePrompt
         PromptController.FirePrompt = function(self, promptText, ...)
             
-            if _G.CatrazHub and type(promptText) == "string" and promptText:find("Accept") and promptText:find("from:") then
+            if _G.DemonHub and type(promptText) == "string" and promptText:find("Accept") and promptText:find("from:") then
                 
                 local initiatorName = string.match(promptText, "from: ([^\n]+)") or "Seseorang"
                 
@@ -549,7 +544,7 @@ do
             return oldFirePrompt(self, promptText, ...)
         end
     else
-        warn("[Catrazhub] Gagal memuat PromptController/Promise untuk Auto Accept Trade.")
+        warn("[Demonhub] Gagal memuat PromptController/Promise untuk Auto Accept Trade.")
     end
 end
 
@@ -579,7 +574,7 @@ local selectedRodUUID = nil
 local selectedEnchantNames = {}
 
 local ENCHANT_STONE_ID = 10
-_G.CatrazHub = {}
+_G.DemonHub = {}
 
 local function GetEnchantNameFromId(id)
     id = tonumber(id)
@@ -1337,8 +1332,8 @@ do
     local isHideActive = false
     local hideConnection = nil
     
-    local customName = ".gg/CatrazHub|VynHub"
-    local customLevel = "Lvl. 0" 
+    local customName = "FUFU FAFA"
+    local customLevel = "Lvl. 45106" 
 
     local custname = Reg("cfakennme",other:Input({
         Title = "Custom Fake Name",
@@ -1456,7 +1451,7 @@ do
         else
             if targetPlayer.Character then
                 for _, v in ipairs(targetPlayer.Character:GetChildren()) do
-                    if v.Name == "CatrazHubESP" and v:IsA("BillboardGui") then pcall(function() v:Destroy() end) end
+                    if v.Name == "DemonHubESP" and v:IsA("BillboardGui") then pcall(function() v:Destroy() end) end
                 end
             end
         end
@@ -1471,7 +1466,7 @@ do
         if not hrp then return end
 
         local BillboardGui = Instance.new("BillboardGui")
-        BillboardGui.Name = "CatrazHubESP"
+        BillboardGui.Name = "DemonHubESP"
         BillboardGui.Adornee = hrp
         BillboardGui.Size = UDim2.new(0, 140, 0, 40)
         BillboardGui.AlwaysOnTop = true
@@ -1930,7 +1925,7 @@ do
     local cancelDelay = 0.3
     local loopInterval = 1.715
     
-    _G.CatrazHub_BlatantActive = false
+    _G.DemonHub_BlatantActive = false
 
     -- [[ 1. LOGIC KILLER: LUMPUHKAN CONTROLLER ]]
     task.spawn(function()
@@ -1941,11 +1936,11 @@ do
             
             -- Matikan fungsi charge & cast game asli saat Blatant ON
             FishingController.RequestChargeFishingRod = function(...)
-                if _G.CatrazHub_BlatantActive then return end 
+                if _G.DemonHub_BlatantActive then return end 
                 return Old_Charge(...)
             end
             FishingController.SendFishingRequestToServer = function(...)
-                if _G.CatrazHub_BlatantActive then return false, "Blocked by CatrazHub" end
+                if _G.DemonHub_BlatantActive then return false, "Blocked by DemonHub" end
                 return Old_Cast(...)
             end
         end
@@ -1957,7 +1952,7 @@ do
     setreadonly(mt, false)
     mt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
-        if _G.CatrazHub_BlatantActive and not checkcaller() then
+        if _G.DemonHub_BlatantActive and not checkcaller() then
             -- Cegah game mengirim request mancing atau request update state
             if method == "InvokeServer" and (self.Name == "RequestFishingMinigameStarted" or self.Name == "ChargeFishingRod" or self.Name == "UpdateAutoFishingState") then
                 return nil 
@@ -2004,7 +1999,7 @@ do
                     ColorSequenceKeypoint.new(1, Color3.fromHex("ff2256"))
                 })
 
-                while _G.CatrazHub_BlatantActive do
+                while _G.DemonHub_BlatantActive do
                     -- Cari tombol Auto Fishing (Bisa di Backpack atau tagged)
                     local targets = {}
                     
@@ -2087,7 +2082,7 @@ do
             if not checkFishingRemotes() then return end
             disableOtherModes("blatant")
             blatantInstantState = state
-            _G.CatrazHub_BlatantActive = state
+            _G.DemonHub_BlatantActive = state
             
             -- Jalankan Visual Killer
             SuppressGameVisuals(state)
@@ -3211,7 +3206,7 @@ end
         Icon = "arrow-right-left",
         Value = false,
         Callback = function(state)
-            _G.CatrazHub_AutoAcceptTradeEnabled = state
+            _G.DemonHub_AutoAcceptTradeEnabled = state
             
             if state then
                 WindUI:Notify({
@@ -4963,10 +4958,10 @@ do
     -- [UI] KAITUN OVERLAY (FIX Z-INDEX)
     -- =================================================================
     local function CreateKaitunUI()
-        local old = game.CoreGui:FindFirstChild("CatrazHubKaitunStats")
+        local old = game.CoreGui:FindFirstChild("DemonHubKaitunStats")
         if old then old:Destroy() end
         local sg = Instance.new("ScreenGui")
-        sg.Name = "CatrazHubKaitunStats"
+        sg.Name = "DemonHubKaitunStats"
         sg.Parent = game.CoreGui
         sg.IgnoreGuiInset = true
         sg.DisplayOrder = -50 
@@ -4991,7 +4986,7 @@ do
             return l
         end
         
-        txt("CATRAZHUB KAITUN MODE", 0.2, Color3.fromRGB(255,0,255), 35)
+        txt("DemonHUB KAITUN MODE", 0.2, Color3.fromRGB(255,0,255), 35)
         local lQuest = txt("", 0.65, Color3.fromRGB(255,100,100))
         lQuest.TextScaled = true; lQuest.Size = UDim2.new(0.8,0,0.08,0); lQuest.Position = UDim2.new(0.1,0,0.65,0)
 
@@ -7704,7 +7699,7 @@ local CutsceneController = nil
                 -- 1. Buat GUI Hitam di PlayerGui (Bukan CoreGui)
                 if not _G.BlackScreenGUI then
                     _G.BlackScreenGUI = Instance.new("ScreenGui")
-                    _G.BlackScreenGUI.Name = "CatrazHub_BlackBackground"
+                    _G.BlackScreenGUI.Name = "DemonHub_BlackBackground"
                     _G.BlackScreenGUI.IgnoreGuiInset = true
                     -- [-999] = Taruh di paling belakang (di bawah UI Game), tapi nutupin world 3D
                     _G.BlackScreenGUI.DisplayOrder = -999 
@@ -7898,7 +7893,7 @@ utility:Divider()
 
             if #Players:GetPlayers() <= 1 then
                 -- Kalau sendiri, Teleport biasa (akan buat server baru/masuk ulang)
-                Players.LocalPlayer:Kick("\n[CatrazHub] Rejoining...")
+                Players.LocalPlayer:Kick("\n[DemonHub] Rejoining...")
                 task.wait()
                 TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
             else
@@ -8113,7 +8108,7 @@ utility:Divider()
             if state then
                 -- [LOGIKA FIX]: Simpan state asli sebelum dimatikan
                 for _, gui in ipairs(PlayerGui:GetChildren()) do
-                    if gui:IsA("ScreenGui") and gui.Name ~= "WindUI" and gui.Name ~= "CustomFloatingIcon_CatrazHub" then
+                    if gui:IsA("ScreenGui") and gui.Name ~= "WindUI" and gui.Name ~= "CustomFloatingIcon_DemonHub" then
                         -- Simpan status 'Enabled' saat ini ke Attribute
                         gui:SetAttribute("OriginalState", gui.Enabled)
                         gui.Enabled = false
