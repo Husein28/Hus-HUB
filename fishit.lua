@@ -88,8 +88,35 @@ KeyTab:Button({
 
 repeat task.wait(0.1) until KeyVerified
 
-print("[KeySystem] Verified! Starting Main Hub...")
-task.wait(1) -- Beri waktu agar notifikasi tampil dan window lama hilang
+print("[KeySystem] Verified! Cleaning up Key Window...")
+WindUI:Notify({
+    Title = "Cleaning Up",
+    Content = "Menghapus Key Window...",
+    Duration = 1,
+    Icon = "trash"
+})
+
+-- Aggressive Cleanup: Coba tutup window dengan berbagai cara
+pcall(function() KeyWindow:Close() end)
+pcall(function() KeyWindow:Destroy() end)
+task.wait(1)
+
+-- Manual Cleanup di CoreGui jika library tidak mau menutup
+local CoreGui = game:GetService("CoreGui")
+local existingGui = CoreGui:FindFirstChild("WindUI") or CoreGui:FindFirstChild("ScreenGui") -- WindUI kadang pake nama generic
+if existingGui then
+    -- Cek children untuk memastikan ini WindUI
+    for _, child in pairs(existingGui:GetChildren()) do
+        if child.Name == "Container" or child:FindFirstChild("Shadow") then
+           -- Kemungkinan besar ini WindUI, kita destroy
+           existingGui:Destroy()
+           break
+        end
+    end
+end
+
+print("[KeySystem] Cleanup Done. Loading Main Window...")
+task.wait(0.5)
 
 -- [[ KEY SYSTEM END ]] --
 
