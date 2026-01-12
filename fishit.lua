@@ -45,19 +45,20 @@ local KeyWindow = WindUI:CreateWindow({
     Icon = "key",
     Transparent = true,
     Theme = "Native Red",
-    HideSearchBar = true
+    HideSearchBar = true,
+    NewElements = true,
+    Folder = "KeySystem"
 })
 
 local KeyTab = KeyWindow:Tab({ Title = "Key", Icon = "lock" })
 
--- Fix: Use Table for Section and capture it to add elements
 local KeySection = KeyTab:Section({ 
     Title = "Enter THE KEY!",
-    TextSize = 18
+    TextSize = 20
 })
 
 KeySection:Input({
-    Title = "Key",
+    Title = "Key Input",
     Placeholder = "OWI",
     Callback = function(text)
         KeyInput = text
@@ -75,6 +76,8 @@ KeySection:Button({
                 Icon = "check"
             })
             KeyVerified = true
+            -- Optional: Destroy key window if supported or just leave it
+            -- KeyWindow:Close() -- hypothetical
         else
             WindUI:Notify({
                 Title = "Failed",
@@ -86,7 +89,6 @@ KeySection:Button({
     end
 })
 
--- Block script sampai key benar
 repeat task.wait() until KeyVerified
 -- [[ KEY SYSTEM END ]] --
 
