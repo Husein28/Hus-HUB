@@ -56,7 +56,7 @@ KeyTab:Section("Enter THE KEY!")
 
 KeyTab:Input({
     Title = "Key Input",
-    Placeholder = "OWI",
+    Placeholder = "Input The Key HERE",
     Callback = function(text)
         KeyInput = text
     end
