@@ -40,24 +40,21 @@ local ValidKey = "OWI"
 local KeyVerified = false
 local KeyInput = ""
 
+-- Create Window WITHOUT NewElements (Classic Mode)
 local KeyWindow = WindUI:CreateWindow({
     Title = "Key Verification",
     Icon = "key",
     Transparent = true,
     Theme = "Native Red",
-    HideSearchBar = true,
-    NewElements = true,
-    Folder = "KeySystem"
+    HideSearchBar = true
 })
 
 local KeyTab = KeyWindow:Tab({ Title = "Key", Icon = "lock" })
 
-local KeySection = KeyTab:Section({ 
-    Title = "Enter THE KEY!",
-    TextSize = 20
-})
+-- In Classic mode, Section is just a Header
+KeyTab:Section("Enter THE KEY!")
 
-KeySection:Input({
+KeyTab:Input({
     Title = "Key Input",
     Placeholder = "OWI",
     Callback = function(text)
@@ -65,7 +62,7 @@ KeySection:Input({
     end
 })
 
-KeySection:Button({
+KeyTab:Button({
     Title = "Check Key",
     Callback = function()
         if KeyInput == ValidKey then
@@ -76,8 +73,8 @@ KeySection:Button({
                 Icon = "check"
             })
             KeyVerified = true
-            -- Optional: Destroy key window if supported or just leave it
-            -- KeyWindow:Close() -- hypothetical
+            -- Try to close key window
+            pcall(function() KeyWindow:Close() end) 
         else
             WindUI:Notify({
                 Title = "Failed",
@@ -89,7 +86,11 @@ KeySection:Button({
     end
 })
 
-repeat task.wait() until KeyVerified
+repeat task.wait(0.1) until KeyVerified
+
+print("[KeySystem] Verified! Starting Main Hub...")
+task.wait(1) -- Beri waktu agar notifikasi tampil dan window lama hilang
+
 -- [[ KEY SYSTEM END ]] --
 
 local Window = WindUI:CreateWindow({
