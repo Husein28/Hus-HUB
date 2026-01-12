@@ -35,6 +35,59 @@ WindUI:AddTheme({
 
 WindUI:SetTheme("Native Red")
 
+-- [[ KEY SYSTEM START ]] --
+local ValidKey = "OWI"
+local KeyVerified = false
+local KeyInput = ""
+
+local KeyWindow = WindUI:CreateWindow({
+    Title = "Key Verification",
+    Icon = "key",
+    Transparent = true,
+    Theme = "Native Red",
+    HideSearchBar = true
+})
+
+local KeyTab = KeyWindow:Tab({ Title = "Key", Icon = "lock" })
+
+KeyTab:Section("Masukan Key Anda")
+
+KeyTab:Input({
+    Title = "Key",
+    Placeholder = "OWI",
+    Callback = function(text)
+        KeyInput = text
+    end
+})
+
+KeyTab:Button({
+    Title = "Check Key",
+    Callback = function()
+        if KeyInput == ValidKey then
+            WindUI:Notify({
+                Title = "Success",
+                Content = "Key Benar! Loading Script...",
+                Duration = 2,
+                Icon = "check"
+            })
+            KeyVerified = true
+            -- Hapus window key biar bersih (opsional, tergantung WindUI support Destroy/Close)
+            -- KeyWindow:Destroy() atau biarkan tertimpa window baru
+        else
+            WindUI:Notify({
+                Title = "Failed",
+                Content = "Key Salah! Coba lagi.",
+                Duration = 2,
+                Icon = "x"
+            })
+        end
+    end
+})
+
+-- Block script sampai key benar
+repeat task.wait() until KeyVerified
+-- [[ KEY SYSTEM END ]] --
+
 local Window = WindUI:CreateWindow({
     Title = "Catraz Hub |Vyn HUB | Fish It!",
     Folder = "CatrazHub",
