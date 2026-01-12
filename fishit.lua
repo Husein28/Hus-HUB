@@ -25,8 +25,33 @@ local function new(class, props)
     return inst
 end
 
--- Load Security Loader (upload SecurityLoader.lua to GitHub first)
-local SecurityLoader = loadstring(game:HttpGet("https://raw.githubusercontent.com/akmiliadevi/Tugas_Kuliah/refs/heads/main/SecurityLoader.lua"))()
+-- Load Security Loader (REMOVED: Using Dummy Loader for testing)
+-- local SecurityLoader = loadstring(game:HttpGet("https://raw.githubusercontent.com/akmiliadevi/Tugas_Kuliah/refs/heads/main/SecurityLoader.lua"))()
+
+-- DUMMY LOADER IMPLEMENTATION
+local function createDummyModule(name)
+    local dummy = {}
+    local mt = {
+        __index = function(t, k)
+            return function(...)
+                warn("Debug: Called missing function '" .. k .. "' from module '" .. name .. "'")
+                return nil
+            end
+        end,
+        __newindex = function(t, k, v)
+             -- Do nothing on setting values
+        end
+    }
+    setmetatable(dummy, mt)
+    return dummy
+end
+
+local SecurityLoader = {
+    LoadModule = function(name)
+        print("Debug: Loading dummy module: " .. name)
+        return createDummyModule(name)
+    end
+}
 
 -- Load all modules (replace all your loadstring calls)
 local instant = SecurityLoader.LoadModule("instant")
