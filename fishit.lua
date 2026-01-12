@@ -1,3688 +1,3546 @@
---nih maksud nya kek gini ni ni samain dah dari fitur dll maksud nya -- LynxGUI_v2.3.lua - Galaxy Edition (REFINED)
--- BAGIAN 1: Setup, Core Functions, Window Structure
--- FREE NOT FOR SALE
-
-repeat task.wait() until game:IsLoaded()
-
--- ============================================
--- USAGE EXAMPLE - Paste at top of your GUI
--- ============================================
-
+-- SERVICES
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local localPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+-- LOCAL PLAYER
+local player = Players.LocalPlayer
 
-repeat task.wait() until localPlayer:FindFirstChild("PlayerGui")
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
--- Detect if mobile
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
-local function new(class, props)
-    local inst = Instance.new(class)
-    for k,v in pairs(props or {}) do inst[k] = v end
-    return inst
-end
-
--- Load Security Loader (REMOVED: Using Dummy Loader for testing)
--- local SecurityLoader = loadstring(game:HttpGet("https://raw.githubusercontent.com/akmiliadevi/Tugas_Kuliah/refs/heads/main/SecurityLoader.lua"))()
-
--- DUMMY LOADER IMPLEMENTATION
-local function createDummyModule(name)
-    local dummy = {}
-    local mt = {
-        __index = function(t, k)
-            return function(...)
-                warn("Debug: Called missing function '" .. k .. "' from module '" .. name .. "'")
-                return nil
-            end
-        end,
-        __newindex = function(t, k, v)
-             -- Do nothing on setting values
-        end
-    }
-    setmetatable(dummy, mt)
-    return dummy
-end
-
-local SecurityLoader = {
-    LoadModule = function(name)
-        print("Debug: Loading dummy module: " .. name)
-        return createDummyModule(name)
-    end
-}
-
--- Load all modules (replace all your loadstring calls)
-local instant = SecurityLoader.LoadModule("instant")
-local instant2 = SecurityLoader.LoadModule("instant2")
-local blatantv1 = SecurityLoader.LoadModule("blatantv1")
-local UltraBlatant = SecurityLoader.LoadModule("UltraBlatant")
-local blatantv2 = SecurityLoader.LoadModule("blatantv2")
-local blatantv2fix = SecurityLoader.LoadModule("blatantv2fix")
-local NoFishingAnimation = SecurityLoader.LoadModule("NoFishingAnimation")
-local LockPosition = SecurityLoader.LoadModule("LockPosition")
-local AutoEquipRod = SecurityLoader.LoadModule("AutoEquipRod")
-local DisableCutscenes = SecurityLoader.LoadModule("DisableCutscenes")
-local DisableExtras = SecurityLoader.LoadModule("DisableExtras")
-local AutoTotem3X = SecurityLoader.LoadModule("AutoTotem3X")
-local SkinAnimation = SecurityLoader.LoadModule("SkinAnimation")
-local WalkOnWater = SecurityLoader.LoadModule("WalkOnWater")
-local TeleportModule = SecurityLoader.LoadModule("TeleportModule")
-local TeleportToPlayer = SecurityLoader.LoadModule("TeleportToPlayer")
-local SavedLocation = SecurityLoader.LoadModule("SavedLocation")
-local AutoQuestModule = SecurityLoader.LoadModule("AutoQuestModule")
-local AutoTemple = SecurityLoader.LoadModule("AutoTemple")
-local TempleDataReader = SecurityLoader.LoadModule("TempleDataReader")
-local AutoSell = SecurityLoader.LoadModule("AutoSell")
-local AutoSellTimer = SecurityLoader.LoadModule("AutoSellTimer")
-local MerchantSystem = SecurityLoader.LoadModule("MerchantSystem")
-local RemoteBuyer = SecurityLoader.LoadModule("RemoteBuyer")
-local FreecamModule = SecurityLoader.LoadModule("FreecamModule")
-local UnlimitedZoomModule = SecurityLoader.LoadModule("UnlimitedZoomModule")
-local AntiAFK = SecurityLoader.LoadModule("AntiAFK")
-local UnlockFPS = SecurityLoader.LoadModule("UnlockFPS")
-local FPSBooster = SecurityLoader.LoadModule("FPSBooster")
-local AutoBuyWeather = SecurityLoader.LoadModule("AutoBuyWeather")
-local Notify = SecurityLoader.LoadModule("Notify")
-local GoodPerfectionStable = SecurityLoader.LoadModule("GoodPerfectionStable")
-
--- Continue with rest of your GUI code...
-print("✅ All modules loaded securely!")
-
--- Galaxy Color Palette
-local colors = {
-    primary = Color3.fromRGB(255, 140, 0),       -- Purple
-    secondary = Color3.fromRGB(147, 112, 219),    -- Medium purple
-    accent = Color3.fromRGB(186, 85, 211),        -- Orchid
-    galaxy1 = Color3.fromRGB(123, 104, 238),      -- Medium slate blue
-    galaxy2 = Color3.fromRGB(72, 61, 139),        -- Dark slate blue
-    success = Color3.fromRGB(34, 197, 94),        -- Green
-    warning = Color3.fromRGB(251, 191, 36),       -- Amber
-    danger = Color3.fromRGB(239, 68, 68),         -- Red
+local Window = WindUI:CreateWindow({
+    Title = "RuinzHub  |  FishIt",
+    Author = "discord.gg/NsT3RVZeEv",
+	Icon = "rbxassetid://127752996743839",
+    Folder = "RuinzHub",
+    IconSize = 18*2,
+    Size = UDim2.fromOffset(580, 390),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    NewElements = true,
+    HideSearchBar = true,
+	SideBarWidth = 160,
+    Transparent = true,
     
-    bg1 = Color3.fromRGB(10, 10, 10),             -- Deep black
-    bg2 = Color3.fromRGB(18, 18, 18),             -- Dark gray
-    bg3 = Color3.fromRGB(25, 25, 25),             -- Medium gray
-    bg4 = Color3.fromRGB(35, 35, 35),             -- Light gray
-    
-    text = Color3.fromRGB(255, 255, 255),
-    textDim = Color3.fromRGB(180, 180, 180),
-    textDimmer = Color3.fromRGB(120, 120, 120),
-    
-    border = Color3.fromRGB(50, 50, 50),
-    glow = Color3.fromRGB(138, 43, 226),
-}
-
--- Compact Window Size
-local windowSize = UDim2.new(0, 420, 0, 280)
-local minWindowSize = Vector2.new(380, 250)
-local maxWindowSize = Vector2.new(550, 400)
-
--- Sidebar state (Always expanded, no toggle)
-local sidebarWidth = 140
-
-local gui = new("ScreenGui",{
-    Name="LynxGUI_Galaxy",
-    Parent=localPlayer.PlayerGui,
-    IgnoreGuiInset=true,
-    ResetOnSpawn=false,
-    ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
-    DisplayOrder=999999999
-})
-
-local function bringToFront()
-    -- Langsung set ke nilai maksimal DisplayOrder
-    gui.DisplayOrder = 2147483647  -- Nilai Int32 maksimal
-    print("🔥 GUI forced to max DisplayOrder:", gui.DisplayOrder)
-end
-
--- Main Window Container - ULTRA TRANSPARENT
-local win = new("Frame",{
-    Parent=gui,
-    Size=windowSize,
-    Position=UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2),
-    BackgroundColor3=colors.bg1,
-    BackgroundTransparency=0.25,  -- Lebih transparan dari 0.15
-    BorderSizePixel=0,
-    ClipsDescendants=false,
-    ZIndex=3
-})
-new("UICorner",{Parent=win, CornerRadius=UDim.new(0, 12)})
-
--- Subtle outer glow
-new("UIStroke",{
-    Parent=win,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.9,  -- Lebih transparan dari 0.85
-    ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-})
-
--- Inner shadow effect
-local innerShadow = new("Frame",{
-    Parent=win,
-    Size=UDim2.new(1, -2, 1, -2),
-    Position=UDim2.new(0, 1, 0, 1),
-    BackgroundTransparency=1,
-    BorderSizePixel=0,
-    ZIndex=2
-})
-new("UICorner",{Parent=innerShadow, CornerRadius=UDim.new(0, 11)})
-new("UIStroke",{
-    Parent=innerShadow,
-    Color=Color3.fromRGB(0, 0, 0),
-    Thickness=1,
-    Transparency=0.8  -- Lebih transparan dari 0.7
-})
-
--- Sidebar (Below header, always visible, ULTRA transparent)
-local sidebar = new("Frame",{
-    Parent=win,
-    Size=UDim2.new(0, sidebarWidth, 1, -45),
-    Position=UDim2.new(0, 0, 0, 45),
-    BackgroundColor3=colors.bg2,
-    BackgroundTransparency=0.75,  -- Lebih transparan dari 0.6
-    BorderSizePixel=0,
-    ClipsDescendants=true,
-    ZIndex=4
-})
-new("UICorner",{Parent=sidebar, CornerRadius=UDim.new(0, 12)})
-
--- Sidebar subtle border
-new("UIStroke",{
-    Parent=sidebar,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.95  -- Lebih transparan dari 0.9
-})
-
--- Script Header (INSIDE window, at the top, ULTRA transparent)
-local scriptHeader = new("Frame",{
-    Parent=win,
-    Size=UDim2.new(1, 0, 0, 45),
-    Position=UDim2.new(0, 0, 0, 0),
-    BackgroundColor3=colors.bg2,
-    BackgroundTransparency=0.75,  -- Lebih transparan dari 0.6
-    BorderSizePixel=0,
-    ZIndex=5
-})
-new("UICorner",{Parent=scriptHeader, CornerRadius=UDim.new(0, 12)})
-
--- Subtle gradient overlay
-local gradient = new("UIGradient",{
-    Parent=scriptHeader,
-    Color=ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(72, 61, 139))
+    OpenButton = {
+        Icon = "rbxassetid://127752996743839",
+        CornerRadius = UDim.new(0, 16),
+        StrokeThickness = 0,
+        Color = ColorSequence.new(Color3.fromHex("0A1A3F"), Color3.fromHex("0F3C75")),
+        OnlyMobile = false,
+        Enabled = true,
+        Draggable = true,
     },
-    Rotation=45,
-    Transparency=NumberSequence.new{
-        NumberSequenceKeypoint.new(0, 0.97),  -- Lebih transparan
-        NumberSequenceKeypoint.new(1, 0.99)   -- Lebih transparan
+
+    Topbar = {
+        Height = 60,
+        ButtonsType = "Default", -- Default or Mac
+    },
+    --[[
+    KeySystem = {
+        Title = "Key System Example  |  WindUI Example",
+        Note = "Key System. Key: 1234",
+        KeyValidator = function(EnteredKey)
+            if EnteredKey == "1234" then
+                createPopup()
+                return true
+            end
+            return false
+            -- return EnteredKey == "1234" -- if key == "1234" then return true else return false end
+        end
     }
+    ]]
 })
 
--- Drag Handle for Header (More subtle)
-local headerDragHandle = new("Frame",{
-    Parent=scriptHeader,
-    Size=UDim2.new(0, 40, 0, 3),
-    Position=UDim2.new(0.5, -20, 0, 8),
-    BackgroundColor3=colors.primary,
-    BackgroundTransparency=0.8,  -- Lebih transparan dari 0.7
-    BorderSizePixel=0,
-    ZIndex=6
-})
-new("UICorner",{Parent=headerDragHandle, CornerRadius=UDim.new(1, 0)})
-
--- Drag handle glow effect
-new("UIStroke",{
-    Parent=headerDragHandle,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.85  -- Lebih transparan dari 0.8
-})
-
--- Title with glow effect
-local titleLabel = new("TextLabel",{
-    Parent=scriptHeader,
-    Text="LynX",
-    Size=UDim2.new(0, 80, 1, 0),
-    Position=UDim2.new(0, 15, 0, 0),
-    BackgroundTransparency=1,
-    Font=Enum.Font.GothamBold,
-    TextSize=17,
-    TextColor3=colors.primary,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextStrokeTransparency=0.9,
-    TextStrokeColor3=colors.primary,
-    ZIndex=6
-})
-
--- Title glow effect
-local titleGlow = new("TextLabel",{
-    Parent=scriptHeader,
-    Text="LynX",
-    Size=titleLabel.Size,
-    Position=titleLabel.Position,
-    BackgroundTransparency=1,
-    Font=Enum.Font.GothamBold,
-    TextSize=17,
-    TextColor3=colors.primary,
-    TextTransparency=0.7,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=5
-})
-
--- Animated glow pulse
-task.spawn(function()
-    while true do
-        TweenService:Create(titleGlow, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            TextTransparency=0.4
-        }):Play()
-        task.wait(2)
-        TweenService:Create(titleGlow, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            TextTransparency=0.7
-        }):Play()
-        task.wait(2)
-    end
-end)
-
--- Separator with glow
-local separator = new("Frame",{
-    Parent=scriptHeader,
-    Size=UDim2.new(0, 2, 0, 25),
-    Position=UDim2.new(0, 95, 0.5, -12.5),
-    BackgroundColor3=colors.primary,
-    BackgroundTransparency=0.3,
-    BorderSizePixel=0,
-    ZIndex=6
-})
-new("UICorner",{Parent=separator, CornerRadius=UDim.new(1, 0)})
-new("UIStroke",{
-    Parent=separator,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.7
-})
-
-local subtitleLabel = new("TextLabel",{
-    Parent=scriptHeader,
-    Text="Free Not For Sale",
-    Size=UDim2.new(0, 150, 1, 0),
-    Position=UDim2.new(0, 105, 0, 0),
-    BackgroundTransparency=1,
-    Font=Enum.Font.GothamBold,
-    TextSize=9,
-    TextColor3=colors.textDim,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextTransparency=0.3,
-    ZIndex=6
-})
-
--- Minimize button in header - more polished
-local btnMinHeader = new("TextButton",{
-    Parent=scriptHeader,
-    Size=UDim2.new(0, 30, 0, 30),
-    Position=UDim2.new(1, -38, 0.5, -15),
-    BackgroundColor3=colors.bg4,
-    BackgroundTransparency=0.5,
-    BorderSizePixel=0,
-    Text="─",
-    Font=Enum.Font.GothamBold,
-    TextSize=18,
-    TextColor3=colors.textDim,
-    TextTransparency=0.3,
-    AutoButtonColor=false,
-    ZIndex=7
-})
-new("UICorner",{Parent=btnMinHeader, CornerRadius=UDim.new(0, 8)})
-
-local btnStroke = new("UIStroke",{
-    Parent=btnMinHeader,
-    Color=colors.primary,
-    Thickness=0,
-    Transparency=0.8
-})
-
-btnMinHeader.MouseEnter:Connect(function()
-    TweenService:Create(btnMinHeader, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        BackgroundColor3=colors.galaxy1,
-        BackgroundTransparency=0.2,
-        TextColor3=colors.text,
-        TextTransparency=0,
-        Size=UDim2.new(0, 32, 0, 32)
-    }):Play()
-    TweenService:Create(btnStroke, TweenInfo.new(0.25), {
-        Thickness=1.5,
-        Transparency=0.4
-    }):Play()
-end)
-
-btnMinHeader.MouseLeave:Connect(function()
-    TweenService:Create(btnMinHeader, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        BackgroundColor3=colors.bg4,
-        BackgroundTransparency=0.5,
-        TextColor3=colors.textDim,
-        TextTransparency=0.3,
-        Size=UDim2.new(0, 30, 0, 30)
-    }):Play()
-    TweenService:Create(btnStroke, TweenInfo.new(0.25), {
-        Thickness=0,
-        Transparency=0.8
-    }):Play()
-end)
-
--- Navigation Container (Below header) - PADDING DIPERBAIKI
-local navContainer = new("ScrollingFrame",{
-    Parent=sidebar,
-    Size=UDim2.new(1, -8, 1, -12),  -- Padding kiri kanan 4px, atas bawah 6px
-    Position=UDim2.new(0, 4, 0, 6),  -- Posisi dari (2,48) ke (4,6)
-    BackgroundTransparency=1,
-    ScrollBarThickness=2,
-    ScrollBarImageColor3=colors.primary,
-    BorderSizePixel=0,
-    CanvasSize=UDim2.new(0, 0, 0, 0),
-    AutomaticCanvasSize=Enum.AutomaticSize.Y,
-    ClipsDescendants=true,
-    ZIndex=5
-})
-new("UIListLayout",{
-    Parent=navContainer,
-    Padding=UDim.new(0, 4),
-    SortOrder=Enum.SortOrder.LayoutOrder
-})
-
--- Content Area (Below header, ULTRA transparent) - POSISI DIPERBAIKI
-local contentBg = new("Frame",{
-    Parent=win,
-    Size=UDim2.new(1, -(sidebarWidth + 10), 1, -52),  -- Padding kanan 10px, bawah 52px
-    Position=UDim2.new(0, sidebarWidth + 5, 0, 47),  -- Padding kiri 5px, atas 47px
-    BackgroundColor3=colors.bg2,
-    BackgroundTransparency=0.8,  -- Lebih transparan dari 0.7
-    BorderSizePixel=0,
-    ClipsDescendants=true,
-    ZIndex=4
-})
-new("UICorner",{Parent=contentBg, CornerRadius=UDim.new(0, 12)})
-
--- Content area subtle border
-new("UIStroke",{
-    Parent=contentBg,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.95  -- Lebih transparan dari 0.92
-})
-
--- Top Bar (Page Title, ULTRA transparent) - PADDING DIPERBAIKI
-local topBar = new("Frame",{
-    Parent=contentBg,
-    Size=UDim2.new(1, -8, 0, 32),  -- Padding kiri kanan 4px
-    Position=UDim2.new(0, 4, 0, 4),  -- Padding atas 4px
-    BackgroundColor3=colors.bg3,
-    BackgroundTransparency=0.8,  -- Lebih transparan dari 0.7
-    BorderSizePixel=0,
-    ZIndex=5
-})
-new("UICorner",{Parent=topBar, CornerRadius=UDim.new(0, 10)})
-
--- Topbar glow
-new("UIStroke",{
-    Parent=topBar,
-    Color=colors.primary,
-    Thickness=1,
-    Transparency=0.95  -- Lebih transparan dari 0.93
-})
-
-local pageTitle = new("TextLabel",{
-    Parent=topBar,
-    Text="Main Dashboard",
-    Size=UDim2.new(1, -20, 1, 0),
-    Position=UDim2.new(0, 12, 0, 0),
-    Font=Enum.Font.GothamBold,
-    TextSize=11,
-    BackgroundTransparency=1,
-    TextColor3=colors.text,
-    TextTransparency=0.2,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=6
-})
-
--- Resize Handle - more polished
-local resizeHandle = new("TextButton",{
-    Parent=win,
-    Size=UDim2.new(0, 18, 0, 18),
-    Position=UDim2.new(1, -18, 1, -18),
-    BackgroundColor3=colors.bg3,
-    BackgroundTransparency=0.6,
-    BorderSizePixel=0,
-    Text="⋰",
-    Font=Enum.Font.GothamBold,
-    TextSize=11,
-    TextColor3=colors.textDim,
-    TextTransparency=0.4,
-    AutoButtonColor=false,
-    ZIndex=100
-})
-new("UICorner",{Parent=resizeHandle, CornerRadius=UDim.new(0, 6)})
-
-local resizeStroke = new("UIStroke",{
-    Parent=resizeHandle,
-    Color=colors.primary,
-    Thickness=0,
-    Transparency=0.8
-})
-
-resizeHandle.MouseEnter:Connect(function()
-    TweenService:Create(resizeHandle, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-        BackgroundTransparency=0.3,
-        TextTransparency=0,
-        Size=UDim2.new(0, 20, 0, 20)
-    }):Play()
-    TweenService:Create(resizeStroke, TweenInfo.new(0.25), {
-        Thickness=1.5,
-        Transparency=0.5
-    }):Play()
-end)
-
-resizeHandle.MouseLeave:Connect(function()
-    if not resizing then
-        TweenService:Create(resizeHandle, TweenInfo.new(0.25, Enum.EasingStyle.Quint), {
-            BackgroundTransparency=0.6,
-            TextTransparency=0.4,
-            Size=UDim2.new(0, 18, 0, 18)
-        }):Play()
-        TweenService:Create(resizeStroke, TweenInfo.new(0.25), {
-            Thickness=0,
-            Transparency=0.8
-        }):Play()
-    end
-end)
-
--- Pages - PADDING DIPERBAIKI
-local pages = {}
-local currentPage = "Main"
-local navButtons = {}
-
-local function createPage(name)
-    local page = new("ScrollingFrame",{
-        Parent=contentBg,
-        Size=UDim2.new(1, -16, 1, -44),  -- Padding kiri kanan 8px, bawah 44px
-        Position=UDim2.new(0, 8, 0, 40),  -- Padding kiri 8px, atas 40px (32+8)
-        BackgroundTransparency=1,
-        ScrollBarThickness=3,
-        ScrollBarImageColor3=colors.primary,
-        BorderSizePixel=0,
-        CanvasSize=UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize=Enum.AutomaticSize.Y,
-        Visible=false,
-        ClipsDescendants=true,
-        ZIndex=5
-    })
-    new("UIListLayout",{
-        Parent=page,
-        Padding=UDim.new(0, 8),
-        SortOrder=Enum.SortOrder.LayoutOrder
-    })
-    new("UIPadding",{
-        Parent=page,
-        PaddingTop=UDim.new(0, 4),
-        PaddingBottom=UDim.new(0, 4),
-        PaddingLeft=UDim.new(0, 0),
-        PaddingRight=UDim.new(0, 0)
-    })
-    pages[name] = page
-    return page
-end
-
-local mainPage = createPage("Main")
-local teleportPage = createPage("Teleport")
-local questPage = createPage("Quest")
-local shopPage = createPage("Shop")
-local webhookPage = createPage("Webhook")
-local cameraViewPage = createPage("CameraView")
-local settingsPage = createPage("Settings")
-local infoPage = createPage("Info")
-mainPage.Visible = true
-
--- LynxGUI_v2.3.lua - Galaxy Edition (REFINED)
--- BAGIAN 2: Navigation, UI Components (Toggle, Input Horizontal, Dropdown, Button, Category)
-
--- Nav Button - PADDING DIPERBAIKI, lebih transparan
-local function createNavButton(text, icon, page, order)
-    local btn = new("TextButton",{
-        Parent=navContainer,
-        Size=UDim2.new(1, 0, 0, 38),
-        BackgroundColor3=page == currentPage and colors.bg3 or Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency=page == currentPage and 0.7 or 1,  -- Lebih transparan
-        BorderSizePixel=0,
-        Text="",
-        AutoButtonColor=false,
-        LayoutOrder=order,
-        ZIndex=6
-    })
-    new("UICorner",{Parent=btn, CornerRadius=UDim.new(0, 9)})
-    
-    local indicator = new("Frame",{
-        Parent=btn,
-        Size=UDim2.new(0, 3, 0, 20),
-        Position=UDim2.new(0, 0, 0.5, -10),
-        BackgroundColor3=colors.primary,
-        BorderSizePixel=0,
-        Visible=page == currentPage,
-        ZIndex=7
-    })
-    new("UICorner",{Parent=indicator, CornerRadius=UDim.new(1, 0)})
-    
-    -- Indicator glow
-    new("UIStroke",{
-        Parent=indicator,
-        Color=colors.primary,
-        Thickness=2,
-        Transparency=0.7
-    })
-    
-    local iconLabel = new("TextLabel",{
-        Parent=btn,
-        Text=icon,
-        Size=UDim2.new(0, 30, 1, 0),
-        Position=UDim2.new(0, 10, 0, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=15,
-        TextColor3=page == currentPage and colors.primary or colors.textDim,
-        TextTransparency=page == currentPage and 0 or 0.3,
-        ZIndex=7
-    })
-    
-    local textLabel = new("TextLabel",{
-        Parent=btn,
-        Text=text,
-        Size=UDim2.new(1, -45, 1, 0),
-        Position=UDim2.new(0, 40, 0, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=10,
-        TextColor3=page == currentPage and colors.text or colors.textDim,
-        TextTransparency=page == currentPage and 0.1 or 0.4,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=7
-    })
-    
-    -- Smooth hover effect
-    btn.MouseEnter:Connect(function()
-        if page ~= currentPage then
-            TweenService:Create(btn, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                BackgroundTransparency=0.8  -- Lebih transparan
-            }):Play()
-            TweenService:Create(iconLabel, TweenInfo.new(0.3), {
-                TextTransparency=0,
-                TextColor3=colors.primary
-            }):Play()
-            TweenService:Create(textLabel, TweenInfo.new(0.3), {
-                TextTransparency=0.2
-            }):Play()
-        end
-    end)
-    
-    btn.MouseLeave:Connect(function()
-        if page ~= currentPage then
-            TweenService:Create(btn, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                BackgroundTransparency=1
-            }):Play()
-            TweenService:Create(iconLabel, TweenInfo.new(0.3), {
-                TextTransparency=0.3,
-                TextColor3=colors.textDim
-            }):Play()
-            TweenService:Create(textLabel, TweenInfo.new(0.3), {
-                TextTransparency=0.4
-            }):Play()
-        end
-    end)
-    
-    navButtons[page] = {btn=btn, icon=iconLabel, text=textLabel, indicator=indicator}
-    
-    return btn
-end
-
-local function switchPage(pageName, pageTitle_text)
-    if currentPage == pageName then return end
-    for _, page in pairs(pages) do page.Visible = false end
-    
-    for name, btnData in pairs(navButtons) do
-        local isActive = name == pageName
-        TweenService:Create(btnData.btn, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-            BackgroundColor3=isActive and colors.bg3 or Color3.fromRGB(0, 0, 0),
-            BackgroundTransparency=isActive and 0.7 or 1  -- Lebih transparan
-        }):Play()
-        btnData.indicator.Visible = isActive
-        TweenService:Create(btnData.icon, TweenInfo.new(0.3), {
-            TextColor3=isActive and colors.primary or colors.textDim,
-            TextTransparency=isActive and 0 or 0.3
-        }):Play()
-        TweenService:Create(btnData.text, TweenInfo.new(0.3), {
-            TextColor3=isActive and colors.text or colors.textDim,
-            TextTransparency=isActive and 0.1 or 0.4
-        }):Play()
-    end
-    
-    pages[pageName].Visible = true
-    pageTitle.Text = pageTitle_text
-    currentPage = pageName
-end
-
-local btnMain = createNavButton("Dashboard", "🏠", "Main", 1)
-local btnTeleport = createNavButton("Teleport", "🌍", "Teleport", 2)
-local btnQuest = createNavButton("Quest", "📜", "Quest", 3)
-local btnShop = createNavButton("Shop", "🛒", "Shop", 3)
-local btnWebhook = createNavButton("Webhook", "🔗", "Webhook", 4)
-local btnCameraView = createNavButton("Camera View", "📷", "CameraView", 3)
-local btnSettings = createNavButton("Settings", "⚙️", "Settings", 4)
-local btnInfo = createNavButton("About", "ℹ️", "Info", 5)
-
-btnMain.MouseButton1Click:Connect(function() switchPage("Main", "Main Dashboard") end)
-btnTeleport.MouseButton1Click:Connect(function() switchPage("Teleport", "Teleport System") end)
-btnQuest.MouseButton1Click:Connect(function() switchPage("Quest", "Auto Quest") end)
-btnShop.MouseButton1Click:Connect(function() switchPage("Shop", "Shop Features") end)
-btnWebhook.MouseButton1Click:Connect(function() switchPage("Webhook", "Webhook Page") end)
-btnCameraView.MouseButton1Click:Connect(function() switchPage("CameraView", "Camera View Settings") end)
-btnSettings.MouseButton1Click:Connect(function() switchPage("Settings", "Settings") end)
-btnInfo.MouseButton1Click:Connect(function() switchPage("Info", "About Lynx") end)
-
--- ==== UI COMPONENTS - SEMUA DIPERBAIKI ALIGNMENT ====
-
--- Category - LEBIH TRANSPARAN
-local function makeCategory(parent, title, icon)
-    local categoryFrame = new("Frame",{
-        Parent=parent,
-        Size=UDim2.new(1, 0, 0, 36),
-        BackgroundColor3=colors.bg3,
-        BackgroundTransparency=0.6,
-        BorderSizePixel=0,
-        AutomaticSize=Enum.AutomaticSize.Y,
-        ClipsDescendants=false,
-        ZIndex=6
-    })
-    new("UICorner",{Parent=categoryFrame, CornerRadius=UDim.new(0, 6)})
-    
-    local categoryStroke = new("UIStroke",{
-        Parent=categoryFrame,
-        Color=colors.border,
-        Thickness=0,
-        Transparency=0.8
-    })
-    
-    local header = new("TextButton",{
-        Parent=categoryFrame,
-        Size=UDim2.new(1, 0, 0, 36),
-        BackgroundTransparency=1,
-        Text="",
-        AutoButtonColor=false,
-        ClipsDescendants=true,
-        ZIndex=7
-    })
-    
-    local titleLabel = new("TextLabel",{
-        Parent=header,
-        Text=title,
-        Size=UDim2.new(1, -50, 1, 0),
-        Position=UDim2.new(0, 8, 0, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=11,
-        TextColor3=colors.text,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=8
-    })
-    
-    local arrow = new("TextLabel",{
-        Parent=header,
-        Text="▼",
-        Size=UDim2.new(0, 20, 1, 0),
-        Position=UDim2.new(1, -24, 0, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=10,
-        TextColor3=colors.primary,
-        ZIndex=8
-    })
-    
-    local contentContainer = new("Frame",{
-        Parent=categoryFrame,
-        Size=UDim2.new(1, -16, 0, 0),
-        Position=UDim2.new(0, 8, 0, 38),
-        BackgroundTransparency=1,
-        Visible=false,
-        AutomaticSize=Enum.AutomaticSize.Y,
-        ClipsDescendants=true,
-        ZIndex=7
-    })
-    new("UIListLayout",{Parent=contentContainer, Padding=UDim.new(0, 6)})
-    new("UIPadding",{Parent=contentContainer, PaddingBottom=UDim.new(0, 8)})
-    
-    local isOpen = false
-    header.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        contentContainer.Visible = isOpen
-        TweenService:Create(arrow, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Rotation=isOpen and 180 or 0}):Play()
-        TweenService:Create(categoryFrame, TweenInfo.new(0.25), {
-            BackgroundTransparency=isOpen and 0.4 or 0.6
-        }):Play()
-        TweenService:Create(categoryStroke, TweenInfo.new(0.25), {Thickness=isOpen and 1 or 0}):Play()
-    end)
-    
-    return contentContainer
-end
-
--- Toggle - ALIGNMENT DIPERBAIKI
-local function makeToggle(parent, label, callback)
-    local frame = new("Frame",{
-        Parent=parent,
-        Size=UDim2.new(1, 0, 0, 32),
-        BackgroundTransparency=1,
-        ZIndex=7
-    })
-    
-    local labelText = new("TextLabel",{
-        Parent=frame,
-        Text=label,
-        Size=UDim2.new(0.68, 0, 1, 0),  -- 68% untuk label
-        Position=UDim2.new(0, 0, 0, 0),
-        TextXAlignment=Enum.TextXAlignment.Left,
-        BackgroundTransparency=1,
-        TextColor3=colors.text,
-        Font=Enum.Font.GothamBold,
-        TextSize=9,
-        TextWrapped=true,
-        ZIndex=8
-    })
-    
-    local toggleBg = new("Frame",{
-        Parent=frame,
-        Size=UDim2.new(0, 38, 0, 20),
-        Position=UDim2.new(1, -38, 0.5, -10),  -- Align ke kanan
-        BackgroundColor3=colors.bg4,
-        BorderSizePixel=0,
-        ZIndex=8
-    })
-    new("UICorner",{Parent=toggleBg, CornerRadius=UDim.new(1, 0)})
-    
-    local toggleCircle = new("Frame",{
-        Parent=toggleBg,
-        Size=UDim2.new(0, 16, 0, 16),
-        Position=UDim2.new(0, 2, 0.5, -8),
-        BackgroundColor3=colors.textDim,
-        BorderSizePixel=0,
-        ZIndex=9
-    })
-    new("UICorner",{Parent=toggleCircle, CornerRadius=UDim.new(1, 0)})
-    
-    local btn = new("TextButton",{
-        Parent=toggleBg,
-        Size=UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency=1,
-        Text="",
-        ZIndex=10
-    })
-    
-    local on = false
-    btn.MouseButton1Click:Connect(function()
-        on = not on
-        TweenService:Create(toggleBg, TweenInfo.new(0.25), {BackgroundColor3=on and colors.primary or colors.bg4}):Play()
-        TweenService:Create(toggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-            Position=on and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
-            BackgroundColor3=on and colors.text or colors.textDim
-        }):Play()
-        callback(on)
-    end)
-end
-
--- Input HORIZONTAL - ALIGNMENT DIPERBAIKI & LEBIH TRANSPARAN
-local function makeInput(parent, label, defaultValue, callback)
-    local frame = new("Frame",{
-        Parent=parent,
-        Size=UDim2.new(1, 0, 0, 32),
-        BackgroundTransparency=1,
-        ZIndex=7
-    })
-    
-    local lbl = new("TextLabel",{
-        Parent=frame,
-        Text=label,
-        Size=UDim2.new(0.55, 0, 1, 0),  -- 55% untuk label
-        Position=UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency=1,
-        TextColor3=colors.text,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        Font=Enum.Font.GothamBold,
-        TextSize=9,
-        ZIndex=8
-    })
-    
-    local inputBg = new("Frame",{
-        Parent=frame,
-        Size=UDim2.new(0.42, 0, 0, 28),  -- 42% untuk input
-        Position=UDim2.new(0.58, 0, 0.5, -14),  -- Align ke kanan
-        BackgroundColor3=colors.bg4,
-        BackgroundTransparency=0.4,  -- Lebih transparan dari 0.3
-        BorderSizePixel=0,
-        ZIndex=8
-    })
-    new("UICorner",{Parent=inputBg, CornerRadius=UDim.new(0, 6)})
-    
-    local inputStroke = new("UIStroke",{
-        Parent=inputBg,
-        Color=colors.border,
-        Thickness=1,
-        Transparency=0.7  -- Lebih transparan dari 0.6
-    })
-    
-    local inputBox = new("TextBox",{
-        Parent=inputBg,
-        Size=UDim2.new(1, -12, 1, 0),
-        Position=UDim2.new(0, 6, 0, 0),
-        BackgroundTransparency=1,
-        Text=tostring(defaultValue),
-        PlaceholderText="0.00",
-        Font=Enum.Font.GothamBold,
-        TextSize=9,
-        TextColor3=colors.text,
-        PlaceholderColor3=colors.textDimmer,
-        TextXAlignment=Enum.TextXAlignment.Center,
-        ClearTextOnFocus=false,
-        ZIndex=9
-    })
-    
-    inputBox.Focused:Connect(function()
-        TweenService:Create(inputStroke, TweenInfo.new(0.2), {
-            Color=colors.primary,
-            Thickness=1.5,
-            Transparency=0.3
-        }):Play()
-    end)
-    
-    inputBox.FocusLost:Connect(function()
-        TweenService:Create(inputStroke, TweenInfo.new(0.2), {
-            Color=colors.border,
-            Thickness=1,
-            Transparency=0.7  -- Lebih transparan dari 0.6
-        }):Play()
-        
-        local value = tonumber(inputBox.Text)
-        if value then
-            callback(value)
-        else
-            inputBox.Text = tostring(defaultValue)
-        end
-    end)
-end
-
--- Dropdown - LEBIH TRANSPARAN & ALIGNMENT DIPERBAIKI
-local function makeDropdown(parent, title, icon, items, onSelect, uniqueId)
-    local dropdownFrame = new("Frame",{
-        Parent=parent,
-        Size=UDim2.new(1, 0, 0, 40),
-        BackgroundColor3=colors.bg4,
-        BackgroundTransparency=0.5,  -- Lebih transparan dari 0.4
-        BorderSizePixel=0,
-        AutomaticSize=Enum.AutomaticSize.Y,
-        ZIndex=7,
-        Name=uniqueId or "Dropdown"
-    })
-    new("UICorner",{Parent=dropdownFrame, CornerRadius=UDim.new(0, 6)})
-    
-    local dropStroke = new("UIStroke",{
-        Parent=dropdownFrame,
-        Color=colors.border,
-        Thickness=0,
-        Transparency=0.8  -- Lebih transparan dari 0.7
-    })
-    
-    local header = new("TextButton",{
-        Parent=dropdownFrame,
-        Size=UDim2.new(1, -12, 0, 36),
-        Position=UDim2.new(0, 6, 0, 2),
-        BackgroundTransparency=1,
-        Text="",
-        AutoButtonColor=false,
-        ZIndex=8
-    })
-    
-    local iconLabel = new("TextLabel",{
-        Parent=header,
-        Text=icon,
-        Size=UDim2.new(0, 24, 1, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=12,
-        TextColor3=colors.primary,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=9
-    })
-    
-    local titleLabel = new("TextLabel",{
-        Parent=header,
-        Text=title,
-        Size=UDim2.new(1, -70, 0, 14),
-        Position=UDim2.new(0, 26, 0, 4),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=9,
-        TextColor3=colors.text,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=9
-    })
-    
-    local statusLabel = new("TextLabel",{
-        Parent=header,
-        Text="None Selected",
-        Size=UDim2.new(1, -70, 0, 12),
-        Position=UDim2.new(0, 26, 0, 20),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=8,
-        TextColor3=colors.textDimmer,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=9
-    })
-    
-    local arrow = new("TextLabel",{
-        Parent=header,
-        Text="▼",
-        Size=UDim2.new(0, 24, 1, 0),
-        Position=UDim2.new(1, -24, 0, 0),
-        BackgroundTransparency=1,
-        Font=Enum.Font.GothamBold,
-        TextSize=10,
-        TextColor3=colors.primary,
-        ZIndex=9
-    })
-    
-    local listContainer = new("ScrollingFrame",{
-        Parent=dropdownFrame,
-        Size=UDim2.new(1, -12, 0, 0),
-        Position=UDim2.new(0, 6, 0, 42),
-        BackgroundTransparency=1,
-        Visible=false,
-        AutomaticCanvasSize=Enum.AutomaticSize.Y,
-        CanvasSize=UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness=2,
-        ScrollBarImageColor3=colors.primary,
-        BorderSizePixel=0,
-        ClipsDescendants=true,
-        ZIndex=10
-    })
-    new("UIListLayout",{Parent=listContainer, Padding=UDim.new(0, 4)})
-    new("UIPadding",{Parent=listContainer, PaddingBottom=UDim.new(0, 8)})
-    
-    local isOpen = false
-    local selectedItem = nil
-    
-    header.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        listContainer.Visible = isOpen
-        
-        TweenService:Create(arrow, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Rotation=isOpen and 180 or 0}):Play()
-        TweenService:Create(dropdownFrame, TweenInfo.new(0.25), {
-            BackgroundTransparency=isOpen and 0.35 or 0.5  -- Lebih transparan
-        }):Play()
-        TweenService:Create(dropStroke, TweenInfo.new(0.25), {Thickness=isOpen and 1 or 0}):Play()
-        
-        if isOpen then
-            listContainer.Size = UDim2.new(1, -12, 0, math.min(#items * 28, 140))
-        end
-    end)
-    
-    for _, itemName in ipairs(items) do
-        local itemBtn = new("TextButton",{
-            Parent=listContainer,
-            Size=UDim2.new(1, 0, 0, 26),
-            BackgroundColor3=colors.bg4,
-            BackgroundTransparency=0.6,  -- Lebih transparan dari 0.5
-            BorderSizePixel=0,
-            Text="",
-            AutoButtonColor=false,
-            ZIndex=11
-        })
-        new("UICorner",{Parent=itemBtn, CornerRadius=UDim.new(0, 5)})
-        
-        local itemStroke = new("UIStroke",{
-            Parent=itemBtn,
-            Color=colors.border,
-            Thickness=0,
-            Transparency=0.8  -- Lebih transparan dari 0.7
-        })
-        
-        local btnLabel = new("TextLabel",{
-            Parent=itemBtn,
-            Text=itemName,
-            Size=UDim2.new(1, -12, 1, 0),
-            Position=UDim2.new(0, 6, 0, 0),
-            BackgroundTransparency=1,
-            Font=Enum.Font.GothamBold,
-            TextSize=8,
-            TextColor3=colors.textDim,
-            TextXAlignment=Enum.TextXAlignment.Left,
-            TextTruncate=Enum.TextTruncate.AtEnd,
-            ZIndex=12
-        })
-        
-        itemBtn.MouseEnter:Connect(function()
-            if selectedItem ~= itemName then
-                TweenService:Create(itemBtn, TweenInfo.new(0.2), {
-                    BackgroundColor3=colors.primary,
-                    BackgroundTransparency=0.3
-                }):Play()
-                TweenService:Create(btnLabel, TweenInfo.new(0.2), {TextColor3=colors.text}):Play()
-                TweenService:Create(itemStroke, TweenInfo.new(0.2), {Thickness=1}):Play()
-            end
-        end)
-        
-        itemBtn.MouseLeave:Connect(function()
-            if selectedItem ~= itemName then
-                TweenService:Create(itemBtn, TweenInfo.new(0.2), {
-                    BackgroundColor3=colors.bg4,
-                    BackgroundTransparency=0.6
-                }):Play()
-                TweenService:Create(btnLabel, TweenInfo.new(0.2), {TextColor3=colors.textDim}):Play()
-                TweenService:Create(itemStroke, TweenInfo.new(0.2), {Thickness=0}):Play()
-            end
-        end)
-        
-        itemBtn.MouseButton1Click:Connect(function()
-            selectedItem = itemName
-            statusLabel.Text = "✓ " .. itemName
-            statusLabel.TextColor3 = colors.success
-            onSelect(itemName)
-            
-            task.wait(0.1)
-            isOpen = false
-            listContainer.Visible = false
-            TweenService:Create(arrow, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Rotation=0}):Play()
-            TweenService:Create(dropdownFrame, TweenInfo.new(0.25), {
-                BackgroundTransparency=0.5
-            }):Play()
-            TweenService:Create(dropStroke, TweenInfo.new(0.25), {Thickness=0}):Play()
-        end)
-    end
-    
-    return dropdownFrame
-end
-
--- Button - LEBIH TRANSPARAN
-local function makeButton(parent, label, callback)
-    local btnFrame = new("Frame",{
-        Parent=parent,
-        Size=UDim2.new(1, 0, 0, 32),
-        BackgroundColor3=colors.primary,
-        BackgroundTransparency=0.3,  -- Lebih transparan dari 0.2
-        BorderSizePixel=0,
-        ZIndex=8
-    })
-    new("UICorner",{Parent=btnFrame, CornerRadius=UDim.new(0, 6)})
-    
-    local btnStroke = new("UIStroke",{
-        Parent=btnFrame,
-        Color=colors.primary,
-        Thickness=0,
-        Transparency=0.7  -- Lebih transparan dari 0.6
-    })
-    
-    local button = new("TextButton",{
-        Parent=btnFrame,
-        Size=UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency=1,
-        Text=label,
-        Font=Enum.Font.GothamBold,
-        TextSize=10,
-        TextColor3=colors.text,
-        AutoButtonColor=false,
-        ZIndex=9
-    })
-    
-    button.MouseEnter:Connect(function()
-        TweenService:Create(btnFrame, TweenInfo.new(0.2), {
-            BackgroundTransparency=0.1,  -- Lebih transparan dari 0
-            Size=UDim2.new(1, 0, 0, 35)
-        }):Play()
-        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Thickness=1.5}):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(btnFrame, TweenInfo.new(0.2), {
-            BackgroundTransparency=0.3,
-            Size=UDim2.new(1, 0, 0, 32)
-        }):Play()
-        TweenService:Create(btnStroke, TweenInfo.new(0.2), {Thickness=0}):Play()
-    end)
-    
-    button.MouseButton1Click:Connect(function()
-        TweenService:Create(btnFrame, TweenInfo.new(0.1), {Size=UDim2.new(0.98, 0, 0, 30)}):Play()
-        task.wait(0.1)
-        TweenService:Create(btnFrame, TweenInfo.new(0.1), {Size=UDim2.new(1, 0, 0, 32)}):Play()
-        pcall(callback)
-    end)
-    
-    return btnFrame
-end
-
--- LynxGUI_v2.3.lua - Galaxy Edition (REFINED)
--- BAGIAN 3 (FINAL): Features, Pages Content, Minimize System, Animations
-
--- ==== MAIN PAGE ====
-local catAutoFishing = makeCategory(mainPage, "Auto Fishing", "🎣")
-local currentInstantMode = "None"
-local fishingDelayValue = 1.30
-local cancelDelayValue = 0.19
-local isInstantFishingEnabled = false -- Tambahkan variabel untuk melacak status toggle
-
-makeDropdown(catAutoFishing, "Instant Fishing Mode", "⚡", {"Fast", "Perfect"}, function(mode)
-    currentInstantMode = mode
-    instant.Stop()
-    instant2.Stop()
-    
-    -- Hanya start jika toggle sudah diaktifkan
-    if isInstantFishingEnabled then
-        if mode == "Fast" then
-            instant.Settings.MaxWaitTime = fishingDelayValue
-            instant.Settings.CancelDelay = cancelDelayValue
-            instant.Start()
-        elseif mode == "Perfect" then
-            instant2.Settings.MaxWaitTime = fishingDelayValue
-            instant2.Settings.CancelDelay = cancelDelayValue
-            instant2.Start()
-        end
-    else
-        -- Jika toggle belum aktif, hanya update settings tanpa start
-        instant.Settings.MaxWaitTime = fishingDelayValue
-        instant.Settings.CancelDelay = cancelDelayValue
-        instant2.Settings.MaxWaitTime = fishingDelayValue
-        instant2.Settings.CancelDelay = cancelDelayValue
-    end
-end, "InstantFishingMode")
-
-makeToggle(catAutoFishing, "Enable Instant Fishing", function(on)
-    isInstantFishingEnabled = on -- Update status toggle
-    
-    if on then
-        if currentInstantMode == "Fast" then
-            instant.Start()
-        elseif currentInstantMode == "Perfect" then
-            instant2.Start()
-        end
-    else
-        instant.Stop()
-        instant2.Stop()
-    end
-end)
-
-makeInput(catAutoFishing, "Fishing Delay", 1.30, function(v)
-    fishingDelayValue = v
-    instant.Settings.MaxWaitTime = v
-    instant2.Settings.MaxWaitTime = v
-end)
-
-makeInput(catAutoFishing, "Cancel Delay", 0.19, function(v)
-    cancelDelayValue = v
-    instant.Settings.CancelDelay = v
-    instant2.Settings.CancelDelay = v
-end)
-
-local catBlatantV2 = makeCategory(mainPage, "Blatant Tester", "🎯")
-
--- Toggle
-makeToggle(catBlatantV2, "Blatant Tester", function(on) 
-    if on then 
-        blatantv2fix.Start() 
-    else 
-        blatantv2fix.Stop() 
-    end 
-end)
-
--- Complete Delay Input
-makeInput(catBlatantV2, "Complete Delay", 0.5, function(v)
-    blatantv2fix.Settings.CompleteDelay = v
-    print("✅ Complete Delay set to: " .. v)
-end)
-
--- Cancel Delay Input
-makeInput(catBlatantV2, "Cancel Delay", 0.1, function(v)
-    blatantv2fix.Settings.CancelDelay = v
-    print("✅ Cancel Delay set to: " .. v)
-end)
-
--- Blatant V1
-local catBlatantV1 = makeCategory(mainPage, "Blatant V1", "💀")
-
-makeToggle(catBlatantV1, "Blatant Mode", function(on) 
-    if on then 
-        blatantv1.Start() 
-    else 
-        blatantv1.Stop() 
-    end 
-end)
-
-makeInput(catBlatantV1, "Complete Delay", 0.05, function(v)
-    blatantv1.Settings.CompleteDelay = v
-    print("✅ Complete Delay set to: " .. v)
-end)
-
-makeInput(catBlatantV1, "Cancel Delay", 0.1, function(v)
-    blatantv1.Settings.CancelDelay = v
-    print("✅ Cancel Delay set to: " .. v)
-end)
-
--- ===== ULTRA BLATANT V3 (NEW!) =====
-local catUltraBlatant = makeCategory(mainPage, "Blatant V2", "⚡")
-
-makeToggle(catUltraBlatant, "Ultra Blatant Mode", function(on) 
-    if on then 
-        UltraBlatant.Start() 
-    else 
-        UltraBlatant.Stop() 
-    end 
-end)
-
-makeInput(catUltraBlatant, "Complete Delay", 0.05, function(v)
-    UltraBlatant.UpdateSettings(v, nil, nil)
-    print("⚡ Complete Delay set to: " .. v)
-end)
-
-makeInput(catUltraBlatant, "Cancel Delay", 0.1, function(v)
-    UltraBlatant.UpdateSettings(nil, v, nil)
-    print("⚡ Cancel Delay set to: " .. v)
-end)
-
--- Blatant V2
-local catBlatantV2 = makeCategory(mainPage, "Fast auto fishing perfect", "🔥")
-
-makeToggle(catBlatantV2, "Blatant Features", function(on) 
-    if on then 
-        blatantv2.Start() 
-    else 
-        blatantv2.Stop() 
-    end 
-end)
-
-makeInput(catBlatantV2, "Fishing Delay", 0.05, function(v) 
-    blatantv2.Settings.FishingDelay = v 
-end)
-
-makeInput(catBlatantV2, "Cancel Delay", 0.01, function(v) 
-    blatantv2.Settings.CancelDelay = v 
-end)
-
-makeInput(catBlatantV2, "Timeout Delay", 0.8, function(v) 
-    blatantv2.Settings.TimeoutDelay = v 
-end)
-
--- Support Features
-local catSupport = makeCategory(mainPage, "Support Features", "🛠️")
-
-makeToggle(catSupport, "No Fishing Animation", function(on)
-    if on then
-        NoFishingAnimation.StartWithDelay()
-    else
-        NoFishingAnimation.Stop()
-    end
-end)
-
-makeToggle(catSupport, "Lock Position", function(on)
-    if on then
-        LockPosition.Start()
-        Notify.Send("Lock Position", "Posisi kamu dikunci!", 4)
-    else
-        LockPosition.Stop()
-        Notify.Send("Lock Position", "Posisi kamu dilepas!", 4)
-    end
-end)
-
--- ✨ NEW: Auto Equip Rod
-makeToggle(catSupport, "Auto Equip Rod", function(on)
-    if on then
-        AutoEquipRod.Start()
-        Notify.Send("Auto Equip Rod", "Rod akan otomatis di-equip!", 4)
-    else
-        AutoEquipRod.Stop()
-        Notify.Send("Auto Equip Rod", "Auto equip dimatikan!", 4)
-    end
-end)
-
-makeToggle(catSupport, "Disable Cutscenes", function(on)
-    if on then
-        local success = DisableCutscenes.Start()
-        if success then
-            Notify.Send("Disable Cutscenes", "✓ Semua cutscenes dimatikan!", 4)
-        else
-            Notify.Send("Disable Cutscenes", "⚠ Sudah aktif!", 3)
-        end
-    else
-        local success = DisableCutscenes.Stop()
-        if success then
-            Notify.Send("Disable Cutscenes", "✓ Cutscenes kembali normal.", 4)
-        else
-            Notify.Send("Disable Cutscenes", "⚠ Sudah nonaktif!", 3)
-        end
-    end
-end)
-
--- Toggle Small Notification
-makeToggle(catSupport, "Disable Obtained Fish Notification", function(on)
-    if on then
-        DisableExtras.StartSmallNotification()
-        Notify.Send("Disable Small Notification", "✓ Small Notification dinonaktifkan!", 4)
-    else
-        DisableExtras.StopSmallNotification()
-        Notify.Send("Disable Small Notification", "Small Notification bisa muncul kembali.", 3)
-    end
-end)
-
--- Toggle Skin Effect
-makeToggle(catSupport, "Disable Skin Effect", function(on)
-    if on then
-        DisableExtras.StartSkinEffect()
-        Notify.Send("Disable Skin Effect", "✓ Skin effect dihapus!", 4)
-    else
-        DisableExtras.StopSkinEffect()
-        Notify.Send("Disable Skin Effect", "Skin effect bisa muncul kembali.", 3)
-    end
-end)
-
--- ✨ NEW: Walk On Water
-makeToggle(catSupport, "Walk On Water", function(on)
-    if on then
-        WalkOnWater.Start()
-        Notify.Send("Walk On Water", "✓ Kamu bisa berjalan di atas air!", 4)
-    else
-        WalkOnWater.Stop()
-        Notify.Send("Walk On Water", "Walk on water dimatikan.", 3)
-    end
-end)
-
-makeToggle(catSupport, "Good/Perfection Stable Mode", function(on)
-    if on then
-        GoodPerfectionStable.Start()
-        Notify.Send("Good/Perfection Stable", "Fitur dihidupkan!", 4)
-    else
-        GoodPerfectionStable.Stop()
-        Notify.Send("Good/Perfection Stable", "Fitur dimatikan!", 4)
-    end
-end)
-
-local catAutoTotem = makeCategory(mainPage, "Auto Spawn 3X Totem", "🛠️")
-
-makeButton(catAutoTotem, "Auto Totem 3X", function()
-    if AutoTotem3X.IsRunning() then
-        local success, message = AutoTotem3X.Stop()
-        if success then
-            Notify.Send("Auto Totem 3X", "⏹ " .. message, 4)
-        end
-    else
-        local success, message = AutoTotem3X.Start()
-        if success then
-            Notify.Send("Auto Totem 3X", "▶ " .. message, 4)
-        else
-            Notify.Send("Auto Totem 3X", "⚠ " .. message, 3)
-        end
-    end
-end)
-
-local catSkin = makeCategory(mainPage, "Skin Animation", "✨")
-
--- Button: Eclipse Katana
-makeButton(catSkin, "⚔️ Eclipse Katana", function()
-    local success = SkinAnimation.SwitchSkin("Eclipse")
-    if success then
-        Notify.Send("Skin Animation", "⚔️ Eclipse Katana diaktifkan!\n• RodThrow: 1.4x (FASTEST CAST!)", 4)
-        
-        -- Auto enable jika belum aktif
-        if not SkinAnimation.IsEnabled() then
-            SkinAnimation.Enable()
-        end
-    else
-        Notify.Send("Skin Animation", "⚠ Gagal mengganti skin!", 3)
-    end
-end)
-
--- Button: Holy Trident
-makeButton(catSkin, "🔱 Holy Trident", function()
-    local success = SkinAnimation.SwitchSkin("HolyTrident")
-    if success then
-        Notify.Send("Skin Animation", "🔱 Holy Trident diaktifkan!\n• RodThrow: 1.3x\n• FishCaught: 1.2x", 4)
-        
-        -- Auto enable jika belum aktif
-        if not SkinAnimation.IsEnabled() then
-            SkinAnimation.Enable()
-        end
-    else
-        Notify.Send("Skin Animation", "⚠ Gagal mengganti skin!", 3)
-    end
-end)
-
--- Button: Soul Scythe
-makeButton(catSkin, "💀 Soul Scythe", function()
-    local success = SkinAnimation.SwitchSkin("SoulScythe")
-    if success then
-        Notify.Send("Skin Animation", "💀 Soul Scythe diaktifkan!\n• StartRodCharge: 1.4x (FASTEST CHARGE!)\n• FishCaught: 1.2x", 4)
-        
-        -- Auto enable jika belum aktif
-        if not SkinAnimation.IsEnabled() then
-            SkinAnimation.Enable()
-        end
-    else
-        Notify.Send("Skin Animation", "⚠ Gagal mengganti skin!", 3)
-    end
-end)
-
--- Toggle: Enable/Disable Skin Animation
-makeToggle(catSkin, "Enable Skin Animation", function(on)
-    if on then
-        local success = SkinAnimation.Enable()
-        if success then
-            local currentSkin = SkinAnimation.GetCurrentSkin()
-            local icon = currentSkin == "Eclipse" and "⚔️" or (currentSkin == "HolyTrident" and "🔱" or "💀")
-            Notify.Send("Skin Animation", "✓ " .. icon .. " " .. currentSkin .. " aktif!", 4)
-        else
-            Notify.Send("Skin Animation", "⚠ Sudah aktif!", 3)
-        end
-    else
-        local success = SkinAnimation.Disable()
-        if success then
-            Notify.Send("Skin Animation", "✓ Skin Animation dimatikan!", 4)
-        else
-            Notify.Send("Skin Animation", "⚠ Sudah nonaktif!", 3)
-        end
-    end
-end)
-
--- ==== TELEPORT PAGE ====
-local locationItems = {}
-for name, _ in pairs(TeleportModule.Locations) do
-    table.insert(locationItems, name)
-end
-table.sort(locationItems)
-
-makeDropdown(teleportPage, "Teleport to Location", "📍", locationItems, function(selectedLocation)
-    TeleportModule.TeleportTo(selectedLocation)
-end, "LocationTeleport")
-
-local playerItems = {}
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= localPlayer then
-        table.insert(playerItems, player.Name)
-    end
-end
-table.sort(playerItems)
-
--- PLAYER TELEPORT WITH AUTO REFRESH
-local playerDropdown
-local playerItems = {}
-
-local function updatePlayerList()
-    table.clear(playerItems)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer then
-            table.insert(playerItems, player.Name)
-        end
-    end
-    table.sort(playerItems)
-    
-    -- Hapus dropdown lama jika ada
-    if playerDropdown and playerDropdown.Parent then
-        playerDropdown:Destroy()
-    end
-    
-    -- Buat dropdown baru dengan list ter-update
-    playerDropdown = makeDropdown(teleportPage, "Teleport to Player", "👤", playerItems, function(selectedPlayer)
-        TeleportToPlayer.TeleportTo(selectedPlayer)
-    end, "PlayerTeleport")
-end
-
--- Initial update
-updatePlayerList()
-
--- Auto refresh ketika player join
-Players.PlayerAdded:Connect(function(player)
-    task.wait(0.5) -- Delay kecil untuk stabilitas
-    updatePlayerList()
-    print("🟢 Player joined: " .. player.Name .. " | List updated!")
-end)
-
--- Auto refresh ketika player leave
-Players.PlayerRemoving:Connect(function(player)
-    task.wait(0.1)
-    updatePlayerList()
-    print("🔴 Player left: " .. player.Name .. " | List updated!")
-end)
-
-local catSaved = makeCategory(teleportPage, "Saved Location", "⭐")
-
-makeButton(catSaved, "Save Current Location", function()
-    SavedLocation.Save()
-    Notify.Send("Saved ⭐", "Lokasi berhasil disimpan.", 3)
-end)
-
-makeButton(catSaved, "Teleport Saved Location", function()
-    if SavedLocation.Teleport() then
-        Notify("Teleported 🚀", "Berhasil teleport ke lokasi tersimpan.", 3)
-    else
-        Notify.Send("Error ❌", "Tidak ada lokasi yang disimpan!", 3)
-    end
-end)
-
-makeButton(catSaved, "Reset Saved Location", function()
-    SavedLocation.Reset()
-    Notify.Send("Reset 🔄", "Lokasi tersimpan telah dihapus.", 3)
-end)
-
---Events Teleport
-local selectedEventName = nil
-
-local EventTeleport = SecurityLoader.LoadModule("EventTeleportDynamic")
-
-if not EventTeleport then
-    warn("⚠️ EventTeleportDynamic module failed to load")
-    EventTeleport = {
-        GetEventNames = function() return {"- No events -"} end,
-        HasCoords = function() return false end,
-        Start = function() end,
-        Stop = function() end,
-        TeleportNow = function() return false end
-    }
-else
-    print("✅ EventTeleportDynamic loaded successfully")
-end
-
--- Ambil list event
-local eventNames = EventTeleport and EventTeleport.GetEventNames() or {"- No events -"}
-
--- =================================================================
--- 🟣 1 CATEGORY SAJA UNTUK SEMUA FITUR TELEPORT EVENT
--- =================================================================
-local catTeleport = makeCategory(teleportPage, "Event Teleport", "🎯")
-
--- Dropdown event di dalam category
-makeDropdown(catTeleport, "Pilih Event", "📌", eventNames, function(selected)
-    selectedEventName = selected
-    Notify.Send("Event", "Event dipilih: "..tostring(selected), 3)
-end, "EventTeleport")
-
--- Toggle Auto Teleport di dalam category yang sama
-makeToggle(catTeleport, "Enable Auto Teleport", function(on)
-    if not EventTeleport then
-        Notify.Send("Error", "Module EventTeleport tidak dimuat!", 3)
-        return
-    end
-
-    if on then
-        if selectedEventName and EventTeleport.HasCoords(selectedEventName) then
-            EventTeleport.Start(selectedEventName)
-            Notify.Send("Auto Teleport", "Mulai auto teleport ke "..selectedEventName, 4)
-        else
-            Notify.Send("Auto Teleport", "Pilih event yang memiliki koordinat dulu!", 3)
-        end
-    else
-        EventTeleport.Stop()
-        Notify.Send("Auto Teleport", "Auto teleport dihentikan.", 3)
-    end
-end)
-
--- Tombol Teleport Now (manual) juga dalam category ini
-makeButton(catTeleport, "Teleport Now", function()
-    if EventTeleport and selectedEventName then
-        local ok = EventTeleport.TeleportNow(selectedEventName)
-        if ok then
-            Notify.Send("Teleport", "Teleported ke "..selectedEventName, 3)
-        else
-            Notify.Send("Teleport", "Teleport gagal!", 3)
-        end
-    else
-        Notify.Send("Teleport", "Event belum dipilih!", 3)
-    end
-end)
-
-
--- ==== QUEST PAGE ====
-local catDeepSea = makeCategory(questPage, "Deep Sea Quest (Ghostfinn Rod)")
-
--- Progress display
-local deepSeaProgressFrame = new("Frame",{
-    Parent=catDeepSea,
-    Size=UDim2.new(1, 0, 0, 160),
-    BackgroundColor3=colors.bg3,
-    BackgroundTransparency=0.6,
-    BorderSizePixel=0,
-    ZIndex=7
-})
-new("UICorner",{Parent=deepSeaProgressFrame, CornerRadius=UDim.new(0, 8)})
-new("UIStroke",{Parent=deepSeaProgressFrame, Color=colors.border, Thickness=1, Transparency=0.7})
-
-local deepSeaLabel = new("TextLabel",{
-    Parent=deepSeaProgressFrame,
-    Size=UDim2.new(1, -24, 1, -24),
-    Position=UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency=1,
-    Text=AutoQuestModule.GetQuestInfo("DeepSeaQuest"),
-    Font=Enum.Font.GothamBold,
-    TextSize=8,
-    TextColor3=colors.text,
-    TextWrapped=true,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextYAlignment=Enum.TextYAlignment.Top,
-    ZIndex=8
-})
-
-makeButton(catDeepSea, "Refresh Progress", function()
-    if AutoQuestModule then
-        deepSeaLabel.Text = AutoQuestModule.GetQuestInfo("DeepSeaQuest")
-        if Notify and type(Notify.Send) == "function" then
-            Notify.Send("Refresh", "Progress updated!", 2)
-        end
-    end
-end)
-
-makeToggle(catDeepSea, "Auto Teleport", function(on)
-    if not AutoQuestModule then return end
-    
-    if on then
-        if type(AutoQuestModule.StartAutoTeleport) == "function" then
-            AutoQuestModule.StartAutoTeleport("DeepSeaQuest")
-            if Notify and type(Notify.Send) == "function" then
-                Notify.Send("Auto Teleport", "Deep Sea Quest Auto Teleport AKTIF!", 2)
-            end
-        end
-    else
-        if type(AutoQuestModule.StopAutoTeleport) == "function" then
-            AutoQuestModule.StopAutoTeleport()
-            if Notify and type(Notify.Send) == "function" then
-                Notify.Send("Auto Teleport", "Deep Sea Quest Auto Teleport DIMATIKAN!", 2)
-            end
-        end
-    end
-    
-    deepSeaLabel.Text = AutoQuestModule.GetQuestInfo("DeepSeaQuest")
-end)
-
-
--- Element Quest
-local catElement = makeCategory(questPage, "Element Quest (Element Rod)")
-
-local elementProgressFrame = new("Frame",{
-    Parent=catElement,
-    Size=UDim2.new(1, 0, 0, 160),
-    BackgroundColor3=colors.bg3,
-    BackgroundTransparency=0.6,
-    BorderSizePixel=0,
-    ZIndex=7
-})
-new("UICorner",{Parent=elementProgressFrame, CornerRadius=UDim.new(0, 8)})
-new("UIStroke",{Parent=elementProgressFrame, Color=colors.border, Thickness=1, Transparency=0.7})
-
-local elementLabel = new("TextLabel",{
-    Parent=elementProgressFrame,
-    Size=UDim2.new(1, -24, 1, -24),
-    Position=UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency=1,
-    Text=AutoQuestModule.GetQuestInfo("ElementQuest"),
-    Font=Enum.Font.GothamBold,
-    TextSize=8,
-    TextColor3=colors.text,
-    TextWrapped=true,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextYAlignment=Enum.TextYAlignment.Top,
-    ZIndex=8
-})
-
-makeButton(catElement, "Refresh Progress", function()
-    if AutoQuestModule then
-        elementLabel.Text = AutoQuestModule.GetQuestInfo("ElementQuest")
-        if Notify and type(Notify.Send) == "function" then
-            Notify.Send("Refresh", "Progress updated!", 2)
-        end
-    end
-end)
-
-makeToggle(catElement, "Auto Teleport", function(on)
-    if not AutoQuestModule then return end
-    
-    if on then
-        if type(AutoQuestModule.StartAutoTeleport) == "function" then
-            AutoQuestModule.StartAutoTeleport("ElementQuest")
-            if Notify and type(Notify.Send) == "function" then
-                Notify.Send("Auto Teleport", "Element Quest Auto Teleport AKTIF!", 2)
-            end
-        end
-    else
-        if type(AutoQuestModule.StopAutoTeleport) == "function" then
-            AutoQuestModule.StopAutoTeleport()
-            if Notify and type(Notify.Send) == "function" then
-                Notify.Send("Auto Teleport", "Element Quest Auto Teleport DIMATIKAN!", 2)
-            end
-        end
-    end
-    
-    elementLabel.Text = AutoQuestModule.GetQuestInfo("ElementQuest")
-end)
-
-
--- ==== REAL-TIME UPDATE ====
-task.spawn(function()
-    while true do
-        task.wait(2)
-        
-        pcall(function()
-            if deepSeaLabel and deepSeaLabel.Parent and AutoQuestModule and type(AutoQuestModule.GetQuestInfo) == "function" then
-                deepSeaLabel.Text = AutoQuestModule.GetQuestInfo("DeepSeaQuest")
-            end
-        end)
-        
-        pcall(function()
-            if elementLabel and elementLabel.Parent and AutoQuestModule and type(AutoQuestModule.GetQuestInfo) == "function" then
-                elementLabel.Text = AutoQuestModule.GetQuestInfo("ElementQuest")
-            end
-        end)
-    end
-end)
-
--- TEMPLE PAGE
-local catTemple = makeCategory(questPage, "Sacred Temple", "⛩️")
-
--- Container progress
-local templeProgressFrame = new("Frame", {
-    Parent = catTemple,
-    Size = UDim2.new(1, 0, 0, 120),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.6,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-new("UICorner", {Parent = templeProgressFrame, CornerRadius = UDim.new(0, 8)})
-new("UIStroke", {Parent = templeProgressFrame, Color = colors.border, Thickness = 1, Transparency = 0.7})
-
--- Label
-local templeLabel = new("TextLabel", {
-    Parent = templeProgressFrame,
-    Size = UDim2.new(1, -24, 1, -24),
-    Position = UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency = 1,
-    Text = "Loading Temple Status...",
-    Font = Enum.Font.GothamBold,
-    TextSize = 8,
-    TextColor3 = colors.text,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    ZIndex = 8
-})
-
--------------------------------------------------------------
--- 🧩 Function untuk membuat teks status (1 sumber data)
--------------------------------------------------------------
-local function BuildTempleText(status)
-    return
-        "Sacred Temple Progress:\n\n" ..
-        "- Crescent Artifact: " .. (status["Crescent Artifact"] and "✔️" or "❌") .. "\n" ..
-        "- Arrow Artifact: " .. (status["Arrow Artifact"] and "✔️" or "❌") .. "\n" ..
-        "- Diamond Artifact: " .. (status["Diamond Artifact"] and "✔️" or "❌") .. "\n" ..
-        "- Hourglass Artifact: " .. (status["Hourglass Diamond Artifact"] and "✔️" or "❌")
-end
-
----------------------------------------------------------------------
--- 🔥 Auto Update Label Saat Data Berubah (REALTIME)
----------------------------------------------------------------------
-TempleDataReader.OnTempleUpdate(function(status)
-    templeLabel.Text = BuildTempleText(status)
-end)
-
----------------------------------------------------------------------
--- 🔄 Refresh Progress
----------------------------------------------------------------------
-makeButton(catTemple, "Refresh Progress", function()
-    local status = TempleDataReader.GetTempleStatus()
-    templeLabel.Text = BuildTempleText(status)
-
-    if Notify then
-        Notify.Send("Refresh", "Temple progress updated!", 2)
-    end
-end)
-
----------------------------------------------------------------------
--- 🎯 Auto Open Sacred Temple Toggle
----------------------------------------------------------------------
-makeToggle(catTemple, "Auto Open Sacred Temple", function(on)
-    if on then
-        AutoTemple.Start()
-        if Notify then
-            Notify.Send("Temple", "Auto Sacred Temple AKTIF!", 2)
-        end
-    else
-        AutoTemple.Stop()
-        if Notify then
-            Notify.Send("Temple", "Auto Sacred Temple DIMATIKAN!", 2)
-        end
-    end
-
-    -- Tetap update label untuk konsistensi
-    templeLabel.Text = BuildTempleText(TempleDataReader.GetTempleStatus())
-end)
-
--- ==== SHOP PAGE ====
-local catSell = makeCategory(shopPage, "Sell All", "💰")
-
-makeButton(catSell, "Sell All Now", function()
-    if AutoSell and AutoSell.SellOnce then
-        AutoSell.SellOnce()
-    end
-end)
-
-local catTimer = makeCategory(shopPage, "Auto Sell Timer", "⏰")
-
-makeInput(catTimer, "Sell Interval (seconds)", 5, function(value)
-    AutoSellTimer.SetInterval(value)
-end)
-
-makeToggle(catTimer, "Auto Sell Timer", function(on)
-    if AutoSellTimer then
-        if on then
-            AutoSellTimer.Start(AutoSellTimer.Interval)
-        else
-            AutoSellTimer.Stop()
-        end
-    end
-end)
-
--- ============================
--- AUTO BUY WEATHER CHECKBOXES
--- ============================
-local catWeather = makeCategory(shopPage, "Auto Buy Weather", "🌦️")
-
--- Container untuk checkboxes
-local weatherCheckboxContainer = new("Frame", {
-    Parent = catWeather,
-    Size = UDim2.new(1, 0, 0, 210), -- Space untuk 6 weather options (35px each)
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = weatherCheckboxContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = weatherCheckboxContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
--- State untuk menyimpan checkbox yang terpilih
-local selectedWeathers = {}
-
--- Function untuk create weather checkbox
-local function createWeatherCheckbox(parent, weatherName, yPos)
-    -- Container untuk satu checkbox
-    local checkboxRow = new("Frame", {
-        Parent = parent,
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 10, 0, yPos),
-        BackgroundColor3 = colors.bg3,
-        BackgroundTransparency = 0.8,
-        BorderSizePixel = 0,
-        ZIndex = 8
-    })
-    
-    new("UICorner", {
-        Parent = checkboxRow,
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    local rowStroke = new("UIStroke", {
-        Parent = checkboxRow,
-        Color = colors.border,
-        Thickness = 0,
-        Transparency = 0.8
-    })
-    
-    -- Checkbox button (kotak kecil)
-    local checkbox = new("TextButton", {
-        Parent = checkboxRow,
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(0, 8, 0, 3),
-        BackgroundColor3 = colors.bg1,
-        BackgroundTransparency = 0.4,
-        BorderSizePixel = 0,
-        Text = "",
-        ZIndex = 9
-    })
-    
-    new("UICorner", {
-        Parent = checkbox,
-        CornerRadius = UDim.new(0, 4)
-    })
-    
-    local checkboxStroke = new("UIStroke", {
-        Parent = checkbox,
-        Color = colors.primary,
-        Thickness = 2,
-        Transparency = 0.7
-    })
-    
-    -- Checkmark icon
-    local checkmark = new("TextLabel", {
-        Parent = checkbox,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "✓",
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
-        TextColor3 = colors.text, -- Putih
-        Visible = false, -- Hidden by default
-        ZIndex = 10
-    })
-    
-    -- Label
-    local label = new("TextLabel", {
-        Parent = checkboxRow,
-        Size = UDim2.new(1, -45, 1, 0),
-        Position = UDim2.new(0, 40, 0, 0),
-        BackgroundTransparency = 1,
-        Text = weatherName,
-        Font = Enum.Font.GothamBold,
-        TextSize = 9,
-        TextColor3 = colors.text, -- Putih
-        TextTransparency = 0.1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 9
-    })
-    
-    -- Toggle function
-    local function toggle()
-        local isSelected = table.find(selectedWeathers, weatherName)
-        
-        if isSelected then
-            -- Uncheck
-            table.remove(selectedWeathers, isSelected)
-            checkmark.Visible = false
-            TweenService:Create(checkbox, TweenInfo.new(0.25), {
-                BackgroundColor3 = colors.bg1,
-                BackgroundTransparency = 0.4
-            }):Play()
-            TweenService:Create(checkboxStroke, TweenInfo.new(0.25), {
-                Transparency = 0.7
-            }):Play()
-            TweenService:Create(checkboxRow, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0.8
-            }):Play()
-            TweenService:Create(rowStroke, TweenInfo.new(0.25), {
-                Thickness = 0
-            }):Play()
-        else
-            -- Check
-            table.insert(selectedWeathers, weatherName)
-            checkmark.Visible = true
-            TweenService:Create(checkbox, TweenInfo.new(0.25), {
-                BackgroundColor3 = colors.primary,
-                BackgroundTransparency = 0.2
-            }):Play()
-            TweenService:Create(checkboxStroke, TweenInfo.new(0.25), {
-                Transparency = 0.3
-            }):Play()
-            TweenService:Create(checkboxRow, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0.6
-            }):Play()
-            TweenService:Create(rowStroke, TweenInfo.new(0.25), {
-                Thickness = 1
-            }):Play()
-        end
-        
-        -- Update ke module AutoBuyWeather
-        AutoBuyWeather.SetSelected(selectedWeathers)
-    end
-    
-    -- Button untuk toggle (entire row clickable)
-    local toggleBtn = new("TextButton", {
-        Parent = checkboxRow,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        ZIndex = 10
-    })
-    
-    toggleBtn.MouseButton1Click:Connect(toggle)
-    
-    -- Hover effect
-    toggleBtn.MouseEnter:Connect(function()
-        TweenService:Create(checkboxRow, TweenInfo.new(0.2), {
-            BackgroundColor3 = colors.bg4,
-            BackgroundTransparency = 0.6
-        }):Play()
-        TweenService:Create(label, TweenInfo.new(0.2), {
-            TextTransparency = 0
-        }):Play()
-    end)
-    
-    toggleBtn.MouseLeave:Connect(function()
-        local isSelected = table.find(selectedWeathers, weatherName)
-        TweenService:Create(checkboxRow, TweenInfo.new(0.2), {
-            BackgroundColor3 = colors.bg3,
-            BackgroundTransparency = isSelected and 0.6 or 0.8
-        }):Play()
-        TweenService:Create(label, TweenInfo.new(0.2), {
-            TextTransparency = 0.1
-        }):Play()
-    end)
-end
-
--- Create checkbox untuk setiap cuaca
-for i, weather in ipairs(AutoBuyWeather.AllWeathers) do
-    createWeatherCheckbox(weatherCheckboxContainer, weather, (i - 1) * 35 + 5)
-end
-
--- Toggle untuk enable/disable auto weather
-makeToggle(catWeather, "Enable Auto Weather", function(on)
-    if on then
-        if #selectedWeathers == 0 then
-            -- Warning jika belum ada cuaca yang dipilih
-            print("⚠️ Please select at least one weather first!")
-            return
-        end
-        AutoBuyWeather.Start()
-    else
-        AutoBuyWeather.Stop()
-    end
-end)
-
--- ============================
---  MERCHANT CATEGORY
--- ============================
-local catMerchant = makeCategory(shopPage, "Remote Merchant", "🛒")
-
-makeButton(catMerchant, "Open Merchant", function()
-    MerchantSystem.Open()
-    Notify.Send("Merchant 🛒", "Merchant dibuka!", 3)
-end)
-
-makeButton(catMerchant, "Close Merchant", function()
-    MerchantSystem.Close()
-    Notify.Send("Merchant 🛒", "Merchant ditutup!", 3)
-end)
-
--- ============================
---  BUY RODS CATEGORY (REMOTE)
--- ============================
-local catRod = makeCategory(shopPage, "Buy Rod", "🎣")
-
--- DATA ROD LENGKAP
-local RodData = {
-    ["Chrome Rod"] = {id = 7, price = 437000},
-    ["Lucky Rod"] = {id = 4, price = 15000},
-    ["Starter Rod"] = {id = 1, price = 50},
-    ["Steampunk Rod"] = {id = 6, price = 215000},
-    ["Carbon Rod"] = {id = 76, price = 750},
-    ["Ice Rod"] = {id = 78, price = 5000},
-    ["Luck Rod"] = {id = 79, price = 325},
-    ["Midnight Rod"] = {id = 80, price = 50000},
-    ["Grass Rod"] = {id = 85, price = 1500},
-    ["Demascus Rod"] = {id = 77, price = 3000},
-    ["Astral Rod"] = {id = 5, price = 1000000},
-    ["Ares Rod"] = {id = 126, price = 3000000},
-    ["Angler Rod"] = {id = 168, price = 8000000},
-    ["Fluorescent Rod"] = {id = 255, price = 715000},
-    ["Bamboo Rod"] = {id = 258, price = 12000000},
-}
-
--- BUAT DROPDOWN LIST: "Nama Rod (Harga)"
-local RodList = {}
-local RodMap = {} -- mapping output dropdown → original rod name
-
-for rodName, info in pairs(RodData) do
-    local price = info.price and tostring(info.price) or "Unknown Price"
-    local display = rodName .. " (" .. price .. ")"
-
-    table.insert(RodList, display)
-    RodMap[display] = rodName
-end
-
-local SelectedRod = nil
-
--- DROPDOWN
-makeDropdown(catRod, "Select Rod", "🎣", RodList, function(displayName)
-    local rodName = RodMap[displayName]
-    SelectedRod = rodName
-
-    local info = RodData[rodName]
-    local priceTxt = info.price and tostring(info.price) or "Unknown Price"
-
-    Notify.Send("Rod Selected",
-        "Rod: " .. rodName .. "\nPrice: " .. priceTxt, 3)
-end, "RodDropdown")
-
--- TOMBOL BUY
-makeButton(catRod, "BUY SELECTED ROD", function()
-    if not SelectedRod then
-        Notify.Send("Buy Rod", "Pilih rod dulu!", 3)
-        return
-    end
-
-    local rod = RodData[SelectedRod]
-    RemoteBuyer.BuyRod(rod.id)
-
-    Notify.Send("Buy Rod", "Membeli " .. SelectedRod .. "...", 3)
-end)
-
--- ============================
---  BUY BAIT CATEGORY (REMOTE)
--- ============================
-local catBait = makeCategory(shopPage, "Buy Bait", "🪱")
-
--- DATA BAIT DARI SCAN
-local BaitData = {
-    ["Chroma Bait"]       = {id = 6,  price = 290000},
-    ["Luck Bait"]         = {id = 2,  price = 1000},
-    ["Midnight Bait"]     = {id = 3,  price = 3000},
-    ["Topwater Bait"]     = {id = 10, price = 100},
-    ["Dark Matter Bait"]  = {id = 8,  price = 630000},
-    ["Nature Bait"]       = {id = 17, price = 83500},
-    ["Aether Bait"]       = {id = 16, price = 3700000},
-    ["Corrupt Bait"]      = {id = 15, price = 1148484},
-    ["Floral Bait"]       = {id = 20, price = 4000000},
-}
-
--- BUAT DROPDOWN LIST
-local BaitList = {}
-local BaitMap = {}
-
-for baitName, info in pairs(BaitData) do
-    local price = info.price and tostring(info.price) or "Unknown Price"
-    local display = baitName .. " (" .. price .. ")"
-
-    table.insert(BaitList, display)
-    BaitMap[display] = baitName
-end
-
-local SelectedBait = nil
-
-makeDropdown(catBait, "Select Bait", "🪱", BaitList, function(displayName)
-    local baitName = BaitMap[displayName]
-    SelectedBait = baitName
-
-    local info = BaitData[baitName]
-    local priceTxt = info.price and tostring(info.price) or "Unknown Price"
-
-    Notify.Send("Bait Selected",
-        "Bait: " .. baitName .. "\nPrice: " .. priceTxt, 3)
-end, "BaitDropdown")
-
--- TOMBOL BUY
-makeButton(catBait, "BUY SELECTED BAIT", function()
-    if not SelectedBait then
-        Notify.Send("Buy Bait", "Pilih bait dulu!", 3)
-        return
-    end
-
-    local bait = BaitData[SelectedBait]
-    RemoteBuyer.BuyBait(bait.id)
-
-    Notify.Send("Buy Bait", "Membeli " .. SelectedBait .. "...", 3)
-end)
-
--- Camera settings
-local catZoom = makeCategory(cameraViewPage, "Unlimited Zoom", "🔭")
-
-makeToggle(catZoom, "Enable Unlimited Zoom", function(on)
-    -- Safety check: pastikan module sudah loaded
-    if not UnlimitedZoomModule then
-        Notify.Send("Error ❌", "UnlimitedZoomModule belum di-load!", 3)
-        warn("❌ UnlimitedZoomModule is nil!")
-        return
-    end
-    
-    -- Safety check: pastikan function Enable ada
-    if type(UnlimitedZoomModule.Enable) ~= "function" then
-        Notify.Send("Error ❌", "UnlimitedZoomModule.Enable bukan function!", 3)
-        warn("❌ UnlimitedZoomModule.Enable is not a function, type:", type(UnlimitedZoomModule.Enable))
-        return
-    end
-    
-    if on then
-        local success, result = pcall(function()
-            return UnlimitedZoomModule.Enable()
-        end)
-        
-        if success and result then
-            Notify.Send("Zoom 🔭", "Unlimited Zoom aktif! Scroll atau pinch untuk zoom.", 4)
-        elseif not success then
-            Notify.Send("Error ❌", "Gagal mengaktifkan: " .. tostring(result), 3)
-            warn("❌ Enable error:", result)
-        end
-    else
-        local success, result = pcall(function()
-            return UnlimitedZoomModule.Disable()
-        end)
-        
-        if success and result then
-            Notify.Send("Zoom 🔭", "Unlimited Zoom nonaktif.", 3)
-        elseif not success then
-            Notify.Send("Error ❌", "Gagal menonaktifkan: " .. tostring(result), 3)
-            warn("❌ Disable error:", result)
-        end
-    end
-end)
-
-FreecamModule.SetMainGuiName("LynxGUI_Galaxy")
-
-local catFreecam = makeCategory(cameraViewPage, "Freecam Camera", "📷")
-
--- Note untuk PC saja - Info Container Style
-if not isMobile then
-    local noteContainer = new("Frame", {
-        Parent = catFreecam,
-        Size = UDim2.new(1, 0, 0, 85),
-        BackgroundColor3 = colors.bg3,
-        BackgroundTransparency = 0.6,
-        BorderSizePixel = 0,
-        ZIndex = 7
-    })
-    
-    new("UICorner", {
-        Parent = noteContainer,
-        CornerRadius = UDim.new(0, 8)
-    })
-    
-    new("UIStroke", {
-        Parent = noteContainer,
-        Color = colors.border,
-        Thickness = 1,
-        Transparency = 0.7
-    })
-    
-    local noteText = new("TextLabel", {
-        Parent = noteContainer,
-        Size = UDim2.new(1, -24, 1, -24),
-        Position = UDim2.new(0, 12, 0, 12),
-        BackgroundTransparency = 1,
-        Text = [[📌 FREECAM CONTROLS (PC)
-    ━━━━━━━━━━━━━━━━━━━━━━
-    1. Aktifkan toggle "Enable Freecam"
-    2. Tekan F3 untuk ON/OFF freecam
-    3. WASD - Gerak | Mouse - Rotasi
-    4. Space/E - Naik | Shift/Q - Turun]],
-        Font = Enum.Font.GothamBold,
-        TextSize = 8,
-        TextColor3 = colors.text,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        ZIndex = 8
+-- */  Tags  /* --
+do
+    Window:Tag({
+        Title = "MAIN",
+		Icon = "sfsymbols:circleHexagongrid",
+        Color = Color3.fromHex("#1c1c1c")
     })
 end
 
--- Detect platform
+
+--======================================================
+-- 🟩 Custom OpenButton + Glow Kedip + Auto Destroy + Mobile Drag
+--======================================================
+
+local CoreGui = game:GetService("CoreGui")
 local UIS = game:GetService("UserInputService")
-local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled
 
-makeToggle(catFreecam, "Enable Freecam", function(on)
-    if on then
-        if not isMobile then
-            if FreecamModule and type(FreecamModule.EnableF3Keybind) == "function" then
-                FreecamModule.EnableF3Keybind(true)
-                if Notify and type(Notify.Send) == "function" then
-                    Notify.Send("Freecam", "Freecam siap! Tekan F3 untuk mengaktifkan.", 4)
-                end
-            end
-        else
-            if FreecamModule and type(FreecamModule.Start) == "function" then
-                FreecamModule.Start()
-                if Notify and type(Notify.Send) == "function" then
-                    Notify.Send("Freecam", "Freecam aktif! Kontrol dengan touch.", 4)
-                end
-            end
-        end
-    else
-        if FreecamModule and type(FreecamModule.EnableF3Keybind) == "function" then
-            FreecamModule.EnableF3Keybind(false)
-            if Notify and type(Notify.Send) == "function" then
-                Notify.Send("Freecam", "Freecam nonaktif.", 3)
-            end
-        end
-    end
-end)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
 
-makeInput(catFreecam, "Movement Speed", 50, function(value)
-    local speed = tonumber(value) or 50
-    if FreecamModule and type(FreecamModule.SetSpeed) == "function" then
-        FreecamModule.SetSpeed(speed)
-    end
-end)
+-- Tombol custom
+local Button = Instance.new("ImageButton")
+Button.Size = UDim2.new(0, 45, 0, 45)
+Button.Position = UDim2.new(0, 20, 0, 200)
+Button.Image = "rbxassetid://127752996743839"
+Button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Button.BorderSizePixel = 0
+Button.Parent = ScreenGui
 
-makeInput(catFreecam, "Mouse Sensitivity", 0.3, function(value)
-    local sens = tonumber(value) or 0.3
-    if FreecamModule and type(FreecamModule.SetSensitivity) == "function" then
-        FreecamModule.SetSensitivity(sens)
-    end
-end)
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Button
 
-makeButton(catFreecam, "Reset Settings", function()
-    if FreecamModule then
-        if type(FreecamModule.SetSpeed) == "function" then
-            FreecamModule.SetSpeed(50)
-        end
-        if type(FreecamModule.SetSensitivity) == "function" then
-            FreecamModule.SetSensitivity(0.3)
-        end
-        if Notify and type(Notify.Send) == "function" then
-            Notify.Send("Reset", "Freecam settings direset!", 3)
-        end
-    end
-end)
+-- DRAGGABLE BUTTON (PC + Mobile)
+local dragging = false
+local dragStart, startPos
 
--- ==== SETTINGS PAGE ====
-local catAFK = makeCategory(settingsPage, "Anti-AFK Protection", "🧍‍♂️")
-
-makeToggle(catAFK, "Enable Anti-AFK", function(on)
-    if on then
-        AntiAFK.Start()
-    else
-        AntiAFK.Stop()
-    end
-end)
-
--- ==== SERVER MANAGEMENT ==== 
--- ✅ GANTI BAGIAN INI DENGAN KODE BARU
-local catServer = makeCategory(settingsPage, "Server Features", "🔄")
-
-makeButton(catServer, "Rejoin Server", function()
-    -- Inline rejoin code (tidak perlu module eksternal)
-    local TeleportService = game:GetService("TeleportService")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    
-    local success, err = pcall(function()
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    end)
-    
-    if success then
-        print("✅ Rejoin request sent!")
-        if Notify then
-            Notify.Send("Rejoin", "Teleporting to new server...", 3)
-        end
-    else
-        warn("❌ Rejoin failed:", err)
-        if Notify then
-            Notify.Send("Error ❌", "Rejoin failed: " .. tostring(err), 3)
-        end
-    end
-end)
-
--- ==== FPS BOOSTER CATEGORY ====
-local catBoost = makeCategory(settingsPage, "FPS Booster", "⚡")
-
-makeToggle(catBoost, "Enable FPS Booster", function(on)
-    if not FPSBooster then
-        Notify.Send("FPS Booster", "Module FPSBooster gagal dimuat!", 3)
-        return
-    end
-
-    if on then
-        FPSBooster.Enable()
-        Notify.Send("FPS Booster", "FPS Booster diaktifkan!", 3)
-    else
-        FPSBooster.Disable()
-        Notify.Send("FPS Booster", "FPS Booster dimatikan.", 3)
-    end
-end)
-
-
-local catFPS = makeCategory(settingsPage, "FPS Unlocker", "🎞️")
-
-makeDropdown(catFPS, "Select FPS Limit", "⚙️", {"60 FPS", "90 FPS", "120 FPS", "240 FPS"}, function(selected)
-    local fpsValue = tonumber(selected:match("%d+"))
-    if fpsValue and UnlockFPS and UnlockFPS.SetCap then
-        UnlockFPS.SetCap(fpsValue)
-    end
-end, "FPSDropdown")
-
-
-
--- ==== INTEGRASI HIDE STATS MODULE ====
--- Letakkan kode ini di bagian atas file GUI utama Anda (setelah deklarasi variabel utama)
-
--- ✅ BENAR:
-local HideStats = SecurityLoader.LoadModule("HideStats")
-local hideStatsLoaded = (HideStats ~= nil)
-
-if not hideStatsLoaded then
-    warn("⚠️ HideStats module failed to load")
-else
-    print("✅ HideStats module loaded successfully")
-end  -- ⬅️ HAPUS PARENTHESIS DI SINI
-
--- ==== SETTINGS PAGE - HIDE STATS CATEGORY ====
--- Letakkan ini di bagian Settings Page Anda (setelah FPS Unlocker category)
-
-local catHideStats = makeCategory(settingsPage, "Hide Stats Identifier", "👤")
-
--- ============================
--- INFO CONTAINER
--- ============================
-local hideStatsInfoContainer = new("Frame", {
-    Parent = catHideStats,
-    Size = UDim2.new(1, 0, 0, 85),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = hideStatsInfoContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = hideStatsInfoContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local hideStatsInfoText = new("TextLabel", {
-    Parent = hideStatsInfoContainer,
-    Size = UDim2.new(1, -24, 1, -24),
-    Position = UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency = 1,
-    Text = [[📌 HIDE STATS INFO
-━━━━━━━━━━━━━━━━━━━━━━
-Sembunyikan nama dan level asli Anda!
-Masukkan fake name & level di bawah.]],
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    ZIndex = 8
-})
-
--- ============================
--- TOGGLE ENABLE HIDE STATS
--- ============================
-makeToggle(catHideStats, "⚡ Enable Hide Stats", function(on)
-    if not hideStatsLoaded or not HideStats then
-        Notify.Send("Hide Stats", "Module Hide Stats belum dimuat, tunggu sebentar...", 3)
-        return
-    end
-    
-    if on then
-        HideStats.Enable()
-        Notify.Send("Hide Stats ✨", "Hide Stats aktif! '-LynX-' berkilau di atas nama.", 3)
-    else
-        HideStats.Disable()
-        Notify.Send("Hide Stats", "Hide Stats dimatikan.", 3)
-    end
-end)
-
--- ============================
--- INPUT FAKE NAME
--- ============================
-local currentFakeName = "Guest"
-
-local fakeNameContainer = new("Frame", {
-    Parent = catHideStats,
-    Size = UDim2.new(1, 0, 0, 80),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = fakeNameContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = fakeNameContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local fakeNameLabel = new("TextLabel", {
-    Parent = fakeNameContainer,
-    Size = UDim2.new(1, -20, 0, 22),
-    Position = UDim2.new(0, 10, 0, 8),
-    BackgroundTransparency = 1,
-    Text = "Fake Name",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 8
-})
-
-local fakeNameTextBox = new("TextBox", {
-    Parent = fakeNameContainer,
-    Size = UDim2.new(1, -20, 0, 38),
-    Position = UDim2.new(0, 10, 0, 35),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.6,
-    BorderSizePixel = 0,
-    Text = "",
-    PlaceholderText = "Enter fake name...",
-    Font = Enum.Font.Gotham,
-    TextSize = 9,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    PlaceholderColor3 = colors.textDimmer,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ClearTextOnFocus = false,
-    ZIndex = 8
-})
-
-new("UICorner", {
-    Parent = fakeNameTextBox,
-    CornerRadius = UDim.new(0, 6)
-})
-
-new("UIStroke", {
-    Parent = fakeNameTextBox,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.9
-})
-
-new("UIPadding", {
-    Parent = fakeNameTextBox,
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8)
-})
-
-fakeNameTextBox.FocusLost:Connect(function(enterPressed)
-    local value = fakeNameTextBox.Text
-    if value and value ~= "" then
-        currentFakeName = value
-        
-        if hideStatsLoaded and HideStats then
-            HideStats.SetFakeName(value)
-            Notify.Send("Hide Stats 👤", "Fake name diubah: " .. value, 2)
-        else
-            Notify.Send("Warning", "Module belum loaded, nama tersimpan sementara", 3)
-        end
-    end
-end)
-
--- ============================
--- INPUT FAKE LEVEL
--- ============================
-local currentFakeLevel = "1"
-
-local fakeLevelContainer = new("Frame", {
-    Parent = catHideStats,
-    Size = UDim2.new(1, 0, 0, 80),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = fakeLevelContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = fakeLevelContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local fakeLevelLabel = new("TextLabel", {
-    Parent = fakeLevelContainer,
-    Size = UDim2.new(1, -20, 0, 22),
-    Position = UDim2.new(0, 10, 0, 8),
-    BackgroundTransparency = 1,
-    Text = "Fake Level",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 8
-})
-
-local fakeLevelTextBox = new("TextBox", {
-    Parent = fakeLevelContainer,
-    Size = UDim2.new(1, -20, 0, 38),
-    Position = UDim2.new(0, 10, 0, 35),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.6,
-    BorderSizePixel = 0,
-    Text = "",
-    PlaceholderText = "Enter fake level...",
-    Font = Enum.Font.Gotham,
-    TextSize = 9,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    PlaceholderColor3 = colors.textDimmer,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ClearTextOnFocus = false,
-    ZIndex = 8
-})
-
-new("UICorner", {
-    Parent = fakeLevelTextBox,
-    CornerRadius = UDim.new(0, 6)
-})
-
-new("UIStroke", {
-    Parent = fakeLevelTextBox,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.9
-})
-
-new("UIPadding", {
-    Parent = fakeLevelTextBox,
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8)
-})
-
-fakeLevelTextBox.FocusLost:Connect(function(enterPressed)
-    local value = fakeLevelTextBox.Text
-    if value and value ~= "" then
-        currentFakeLevel = value
-        
-        if hideStatsLoaded and HideStats then
-            HideStats.SetFakeLevel(value)
-            Notify.Send("Hide Stats 📊", "Fake level diubah: " .. value, 2)
-        else
-            Notify.Send("Warning", "Module belum loaded, level tersimpan sementara", 3)
-        end
-    end
-end)
-
--- ============================
--- WEBHOOK INTEGRATION
--- Page khusus untuk Webhook Features
--- ============================
-
--- Load Webhook Module dari link raw (ganti dengan link raw Anda)
--- Load Webhook Module via SecurityLoader
-local WebhookModule = SecurityLoader.LoadModule("Webhook")
-local webhookLoadSuccess = (WebhookModule ~= nil)
-
-if not webhookLoadSuccess then
-    warn("⚠️ Webhook module failed to load")
-else
-    print("✅ Webhook module loaded successfully")
+local function startDrag(input)
+    dragging = true
+    dragStart = input.Position
+    startPos = Button.Position
 end
 
--- ============================
--- WEBHOOK CATEGORY IN WEBHOOK PAGE
--- ============================
-local catWebhook = makeCategory(webhookPage, "Discord Webhook Fish Caught", "🔔")
-
--- Info Container
-local webhookInfoContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 85),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = webhookInfoContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = webhookInfoContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local webhookInfoText = new("TextLabel", {
-    Parent = webhookInfoContainer,
-    Size = UDim2.new(1, -24, 1, -24),
-    Position = UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency = 1,
-    Text = [[📌 WEBHOOK INFO
-━━━━━━━━━━━━━━━━━━━━━━
-Kirim notifikasi Discord saat menangkap ikan!
-Masukkan Discord Webhook URL Anda di bawah.]],
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    ZIndex = 8
-})
-
--- Input untuk Webhook URL (Custom Implementation untuk fix input hilang)
-local currentWebhookURL = ""
-
--- Container untuk input webhook URL
-local webhookInputContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 80),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = webhookInputContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = webhookInputContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
--- Label
-local webhookLabel = new("TextLabel", {
-    Parent = webhookInputContainer,
-    Size = UDim2.new(1, -20, 0, 22),
-    Position = UDim2.new(0, 10, 0, 8),
-    BackgroundTransparency = 1,
-    Text = "Discord Webhook URL",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 8
-})
-
--- TextBox untuk input
-local webhookTextBox = new("TextBox", {
-    Parent = webhookInputContainer,
-    Size = UDim2.new(1, -20, 0, 38),
-    Position = UDim2.new(0, 10, 0, 35),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.6,
-    BorderSizePixel = 0,
-    Text = "",
-    PlaceholderText = "https://discord.com/api/webhooks/...",
-    Font = Enum.Font.Gotham,
-    TextSize = 9,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    PlaceholderColor3 = colors.textDimmer,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ClearTextOnFocus = false,
-    ZIndex = 8
-})
-
-new("UICorner", {
-    Parent = webhookTextBox,
-    CornerRadius = UDim.new(0, 6)
-})
-
-new("UIStroke", {
-    Parent = webhookTextBox,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.9
-})
-
-new("UIPadding", {
-    Parent = webhookTextBox,
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8)
-})
-
-webhookTextBox.FocusLost:Connect(function(enterPressed)
-    local value = webhookTextBox.Text
-    if value and value ~= "" then
-        currentWebhookURL = value
-        if webhookLoadSuccess and WebhookModule then
-            WebhookModule:SetWebhookURL(value)
-            Notify.Send("Webhook 🔔", "Webhook URL tersimpan!", 2)
-        else
-            Notify.Send("Warning", "Module belum loaded, URL tersimpan sementara", 3)
-        end
-    end
-end)
-
--- Input untuk Discord User ID
-local currentDiscordID = ""
-
-local discordIDContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 80),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = discordIDContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = discordIDContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local discordIDLabel = new("TextLabel", {
-    Parent = discordIDContainer,
-    Size = UDim2.new(1, -20, 0, 22),
-    Position = UDim2.new(0, 10, 0, 8),
-    BackgroundTransparency = 1,
-    Text = "Discord User ID (Optional - untuk mention)",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 8
-})
-
-local discordIDTextBox = new("TextBox", {
-    Parent = discordIDContainer,
-    Size = UDim2.new(1, -20, 0, 38),
-    Position = UDim2.new(0, 10, 0, 35),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.6,
-    BorderSizePixel = 0,
-    Text = "",
-    PlaceholderText = "123456789012345678",
-    Font = Enum.Font.Gotham,
-    TextSize = 9,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    PlaceholderColor3 = colors.textDimmer,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ClearTextOnFocus = false,
-    ZIndex = 8
-})
-
-new("UICorner", {
-    Parent = discordIDTextBox,
-    CornerRadius = UDim.new(0, 6)
-})
-
-new("UIStroke", {
-    Parent = discordIDTextBox,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.9
-})
-
-new("UIPadding", {
-    Parent = discordIDTextBox,
-    PaddingLeft = UDim.new(0, 8),
-    PaddingRight = UDim.new(0, 8)
-})
-
-discordIDTextBox.FocusLost:Connect(function(enterPressed)
-    local value = discordIDTextBox.Text
-    currentDiscordID = value
-    if webhookLoadSuccess and WebhookModule then
-        WebhookModule:SetDiscordUserID(value)
-        if value ~= "" then
-            Notify.Send("Webhook 🔔", "Discord ID tersimpan!", 2)
-        end
-    end
-end)
-
--- ============================
--- RARITY FILTER SECTION
--- ============================
-
-local AllRarities = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "SECRET"}
-local selectedRarities = {}
-
-local rarityInfoContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 80),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = rarityInfoContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = rarityInfoContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local rarityInfoText = new("TextLabel", {
-    Parent = rarityInfoContainer,
-    Size = UDim2.new(1, -24, 1, -24),
-    Position = UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency = 1,
-    Text = [[RARITY FILTER
-━━━━━━━━━━━━━━━━━━━━━━
-Pilih rarity ikan yang akan dikirim ke Discord.
-Klik pada rarity untuk toggle ON/OFF.
-Kosongkan untuk kirim semua rarity.]],
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    ZIndex = 8
-})
-
--- Container untuk checkboxes
-local checkboxContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 240),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = checkboxContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = checkboxContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local rarityColors = {
-    Common = Color3.fromRGB(150, 150, 150),
-    Uncommon = Color3.fromRGB(85, 255, 85),
-    Rare = Color3.fromRGB(85, 170, 255),
-    Epic = Color3.fromRGB(170, 85, 255),
-    Legendary = Color3.fromRGB(255, 200, 85),
-    Mythic = Color3.fromRGB(255, 85, 85),
-    SECRET = Color3.fromRGB(85, 255, 220)
-}
-
-local function createRarityCheckbox(parent, rarityName, yPos)
-    local checkboxRow = new("Frame", {
-        Parent = parent,
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.new(0, 10, 0, yPos),
-        BackgroundColor3 = colors.bg3,
-        BackgroundTransparency = 0.8,
-        BorderSizePixel = 0,
-        ZIndex = 8
-    })
-    
-    new("UICorner", {
-        Parent = checkboxRow,
-        CornerRadius = UDim.new(0, 6)
-    })
-    
-    local rowStroke = new("UIStroke", {
-        Parent = checkboxRow,
-        Color = colors.border,
-        Thickness = 0,
-        Transparency = 0.8
-    })
-    
-    local checkbox = new("TextButton", {
-        Parent = checkboxRow,
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(0, 8, 0, 3),
-        BackgroundColor3 = colors.bg1,
-        BackgroundTransparency = 0.4,
-        BorderSizePixel = 0,
-        Text = "",
-        ZIndex = 9
-    })
-    
-    new("UICorner", {
-        Parent = checkbox,
-        CornerRadius = UDim.new(0, 4)
-    })
-    
-    local checkboxStroke = new("UIStroke", {
-        Parent = checkbox,
-        Color = rarityColors[rarityName] or colors.border,
-        Thickness = 2,
-        Transparency = 0.7
-    })
-    
-    local checkmark = new("TextLabel", {
-        Parent = checkbox,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "✓",
-        Font = Enum.Font.GothamBold,
-        TextSize = 18,
-        TextColor3 = colors.text,
-        Visible = false,
-        ZIndex = 10
-    })
-    
-    local label = new("TextLabel", {
-        Parent = checkboxRow,
-        Size = UDim2.new(1, -45, 1, 0),
-        Position = UDim2.new(0, 40, 0, 0),
-        BackgroundTransparency = 1,
-        Text = rarityName,
-        Font = Enum.Font.GothamBold,
-        TextSize = 9,
-        TextColor3 = colors.text,
-        TextTransparency = 0.1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 9
-    })
-    
-    local isSelected = false
-    
-    local function toggle()
-        isSelected = not isSelected
-        checkmark.Visible = isSelected
-        
-        if isSelected then
-            if not table.find(selectedRarities, rarityName) then
-                table.insert(selectedRarities, rarityName)
-            end
-            TweenService:Create(checkbox, TweenInfo.new(0.25), {
-                BackgroundColor3 = rarityColors[rarityName],
-                BackgroundTransparency = 0.2
-            }):Play()
-            TweenService:Create(checkboxStroke, TweenInfo.new(0.25), {
-                Transparency = 0.3
-            }):Play()
-            TweenService:Create(checkboxRow, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0.6
-            }):Play()
-            TweenService:Create(rowStroke, TweenInfo.new(0.25), {
-                Thickness = 1,
-                Color = rarityColors[rarityName]
-            }):Play()
-        else
-            local idx = table.find(selectedRarities, rarityName)
-            if idx then
-                table.remove(selectedRarities, idx)
-            end
-            TweenService:Create(checkbox, TweenInfo.new(0.25), {
-                BackgroundColor3 = colors.bg1,
-                BackgroundTransparency = 0.4
-            }):Play()
-            TweenService:Create(checkboxStroke, TweenInfo.new(0.25), {
-                Transparency = 0.7
-            }):Play()
-            TweenService:Create(checkboxRow, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0.8
-            }):Play()
-            TweenService:Create(rowStroke, TweenInfo.new(0.25), {
-                Thickness = 0,
-                Color = colors.border
-            }):Play()
-        end
-        
-        if webhookLoadSuccess and WebhookModule then
-            WebhookModule:SetEnabledRarities(selectedRarities)
-        end
-        
-        local statusText = #selectedRarities > 0 
-            and "Selected: " .. table.concat(selectedRarities, ", ")
-            or "Filter cleared - All rarities will be sent"
-        Notify.Send("Rarity Filter 🎯", statusText, 2)
-    end
-    
-    local toggleBtn = new("TextButton", {
-        Parent = checkboxRow,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Text = "",
-        ZIndex = 10
-    })
-    
-    toggleBtn.MouseButton1Click:Connect(toggle)
-    
-    toggleBtn.MouseEnter:Connect(function()
-        TweenService:Create(checkboxRow, TweenInfo.new(0.2), {
-            BackgroundColor3 = colors.bg4,
-            BackgroundTransparency = 0.6
-        }):Play()
-        TweenService:Create(label, TweenInfo.new(0.2), {
-            TextTransparency = 0
-        }):Play()
-    end)
-    
-    toggleBtn.MouseLeave:Connect(function()
-        TweenService:Create(checkboxRow, TweenInfo.new(0.2), {
-            BackgroundColor3 = colors.bg3,
-            BackgroundTransparency = isSelected and 0.6 or 0.8
-        }):Play()
-        TweenService:Create(label, TweenInfo.new(0.2), {
-            TextTransparency = 0.1
-        }):Play()
-    end)
-    
-    return {
-        checkbox = checkbox,
-        checkmark = checkmark,
-        isSelected = function() return isSelected end,
-        setSelected = function(value)
-            if isSelected ~= value then
-                toggle()
-            end
-        end
-    }
+local function endDrag()
+    dragging = false
 end
 
-local checkboxes = {}
-for i, rarityName in ipairs(AllRarities) do
-    local yPosition = (i - 1) * 33 + 5
-    checkboxes[rarityName] = createRarityCheckbox(checkboxContainer, rarityName, yPosition)
-end
-
-makeButton(catWebhook, "✓ Select All Rarities", function()
-    for _, rarity in ipairs(AllRarities) do
-        if checkboxes[rarity] and not checkboxes[rarity].isSelected() then
-            checkboxes[rarity].setSelected(true)
-        end
-    end
-    Notify.Send("Rarity Filter 🎯", "All rarities selected!", 2)
-end)
-
-makeButton(catWebhook, "✗ Clear All Selections", function()
-    for _, rarity in ipairs(AllRarities) do
-        if checkboxes[rarity] and checkboxes[rarity].isSelected() then
-            checkboxes[rarity].setSelected(false)
-        end
-    end
-    Notify.Send("Rarity Filter 🎯", "Filter cleared - All rarities will be sent", 2)
-end)
-
-makeButton(catWebhook, "⭐ Select High Rarity Only", function()
-    local highRarities = {"Epic", "Legendary", "Mythic", "SECRET"}
-    for _, rarity in ipairs(AllRarities) do
-        if checkboxes[rarity] and checkboxes[rarity].isSelected() then
-            checkboxes[rarity].setSelected(false)
-        end
-    end
-    for _, rarity in ipairs(highRarities) do
-        if checkboxes[rarity] and not checkboxes[rarity].isSelected() then
-            checkboxes[rarity].setSelected(true)
-        end
-    end
-    Notify.Send("Rarity Filter 🎯", "High rarities selected: " .. table.concat(highRarities, ", "), 3)
-end)
-
-local selectedRaritiesDisplay = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 70),
-    BackgroundColor3 = colors.bg2,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = selectedRaritiesDisplay,
-    CornerRadius = UDim.new(0, 8)
-})
-
-local displayStroke = new("UIStroke", {
-    Parent = selectedRaritiesDisplay,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local selectedRaritiesLabel = new("TextLabel", {
-    Parent = selectedRaritiesDisplay,
-    Size = UDim2.new(1, -20, 1, -20),
-    Position = UDim2.new(0, 10, 0, 10),
-    BackgroundTransparency = 1,
-    Text = "Active Filter: None (All rarities will be sent)",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.text,
-    TextTransparency = 0.2,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-    ZIndex = 8
-})
-
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        if #selectedRarities > 0 then
-            selectedRaritiesLabel.Text = "Active Filter: " .. table.concat(selectedRarities, ", ")
-            TweenService:Create(selectedRaritiesLabel, TweenInfo.new(0.3), {
-                TextColor3 = colors.success,
-                TextTransparency = 0
-            }):Play()
-            TweenService:Create(displayStroke, TweenInfo.new(0.3), {
-                Color = colors.success,
-                Transparency = 0.7
-            }):Play()
-        else
-            selectedRaritiesLabel.Text = "Active Filter: None (All rarities will be sent)"
-            TweenService:Create(selectedRaritiesLabel, TweenInfo.new(0.3), {
-                TextColor3 = colors.warning,
-                TextTransparency = 0
-            }):Play()
-            TweenService:Create(displayStroke, TweenInfo.new(0.3), {
-                Color = colors.border,
-                Transparency = 0.95
-            }):Play()
-        end
+Button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or
+       input.UserInputType == Enum.UserInputType.Touch then
+        startDrag(input)
     end
 end)
 
-makeToggle(catWebhook, "Enable Webhook", function(on)
-    if not webhookLoadSuccess then
-        Notify.Send("Error ❌", "Webhook module belum di-load! Tunggu sebentar...", 3)
-        task.spawn(function()
-            task.wait(1)
-            loadWebhookModule()
-        end)
-        return
-    end
-    if not WebhookModule then
-        Notify.Send("Error ❌", "Webhook module error!", 3)
-        return
-    end
-    if on then
-        if not currentWebhookURL or currentWebhookURL == "" then
-            Notify.Send("Error ❌", "Masukkan Webhook URL terlebih dahulu!", 3)
-            return
-        end
-        local success = WebhookModule:Start()
-        if success then
-            local filterInfo = #selectedRarities > 0 
-                and " (Filter: " .. table.concat(selectedRarities, ", ") .. ")"
-                or " (All rarities)"
-            Notify.Send("Webhook 🔔", "Webhook logging aktif!" .. filterInfo, 4)
-        else
-            Notify.Send("Error ❌", "Gagal mengaktifkan webhook!", 3)
-        end
-    else
-        local success = WebhookModule:Stop()
-        if success then
-            Notify.Send("Webhook 🔔", "Webhook logging dinonaktifkan.", 3)
-        end
+Button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or
+       input.UserInputType == Enum.UserInputType.Touch then
+        endDrag()
     end
 end)
 
-makeButton(catWebhook, "Test Webhook Connection", function()
-    if not webhookLoadSuccess or not WebhookModule then
-        Notify.Send("Error ❌", "Webhook module belum di-load!", 3)
-        return
-    end
-    if not currentWebhookURL or currentWebhookURL == "" then
-        Notify.Send("Error ❌", "Masukkan Webhook URL terlebih dahulu!", 3)
-        return
-    end
-    local HttpService = game:GetService("HttpService")
-    local requestFunc = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-    if requestFunc then
-        local filterText = #selectedRarities > 0 
-            and "\n**Filter Active:** " .. table.concat(selectedRarities, ", ")
-            or "\n**Filter:** All rarities enabled"
-        local testPayload = {
-            embeds = {{
-                title = "🎣 Webhook Test Successful!",
-                description = "Your Discord webhook is working correctly!\n\nLynxx GUI is ready to send fish notifications." .. filterText,
-                color = 3447003,
-                footer = {
-                    text = "Lynxx Webhook Test • " .. os.date("%m/%d/%Y %H:%M"),
-                    icon_url = "https://i.imgur.com/shnNZuT.png"
-                },
-                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-            }}
-        }
-        local success, err = pcall(function()
-            requestFunc({
-                Url = currentWebhookURL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(testPayload)
-            })
-        end)
-        if success then
-            Notify.Send("Success ✅", "Test message sent! Check Discord.", 4)
-        else
-            Notify.Send("Error ❌", "Test failed: " .. tostring(err), 4)
-        end
-    else
-        Notify.Send("Error ❌", "HTTP request function tidak ditemukan!", 3)
-    end
-end)
-
-
-local statusContainer = new("Frame", {
-    Parent = catWebhook,
-    Size = UDim2.new(1, 0, 0, 50),
-    BackgroundColor3 = colors.bg3,
-    BackgroundTransparency = 0.8,
-    BorderSizePixel = 0,
-    ZIndex = 7
-})
-
-new("UICorner", {
-    Parent = statusContainer,
-    CornerRadius = UDim.new(0, 8)
-})
-
-new("UIStroke", {
-    Parent = statusContainer,
-    Color = colors.border,
-    Thickness = 1,
-    Transparency = 0.95
-})
-
-local statusText = new("TextLabel", {
-    Parent = statusContainer,
-    Size = UDim2.new(1, -20, 1, 0),
-    Position = UDim2.new(0, 10, 0, 0),
-    BackgroundTransparency = 1,
-    Text = "Status: Module Loading...",
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextColor3 = colors.warning,
-    TextTransparency = 0.2,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    ZIndex = 8
-})
-
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if webhookLoadSuccess and WebhookModule then
-            if WebhookModule:IsRunning() then
-                TweenService:Create(statusText, TweenInfo.new(0.3), {
-                    TextColor3 = colors.success
-                }):Play()
-                statusText.Text = "Status: 🟢 Active & Monitoring"
-            else
-                TweenService:Create(statusText, TweenInfo.new(0.3), {
-                    TextColor3 = colors.warning
-                }):Play()
-                statusText.Text = "Status: 🟡 Ready (Not Active)"
-            end
-        else
-            TweenService:Create(statusText, TweenInfo.new(0.3), {
-                TextColor3 = colors.danger
-            }):Play()
-            statusText.Text = "Status: 🔴 Module Not Loaded"
-        end
-    end
-end)
-
--- ==== INFO PAGE ====
-local infoContainer = new("Frame",{
-    Parent=infoPage,
-    Size=UDim2.new(1, 0, 0, 420),
-    BackgroundColor3=colors.bg3,
-    BackgroundTransparency=0.6,  -- Lebih transparan dari 0.5
-    BorderSizePixel=0,
-    ZIndex=6
-})
-new("UICorner",{Parent=infoContainer, CornerRadius=UDim.new(0, 8)})
-new("UIStroke",{
-    Parent=infoContainer,
-    Color=colors.border,
-    Thickness=1,
-    Transparency=0.7  -- Lebih transparan dari 0.6
-})
-
-local infoText = new("TextLabel",{
-    Parent=infoContainer,
-    Size=UDim2.new(1, -24, 0, 80),
-    Position=UDim2.new(0, 12, 0, 12),
-    BackgroundTransparency=1,
-    Text=[[
-# LynX v2.3 
-Free Not For Sale
-━━━━━━━━━━━━━━━━━━━━━━
-━━━━━━━━━━━━━━━━━━━━━━
-Created with by Beee
-Refined Edition 2024
-    ]],
-    Font=Enum.Font.Gotham,
-    TextSize=9,
-    TextColor3=colors.text,
-    TextWrapped=true,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextYAlignment=Enum.TextYAlignment.Top,
-    ZIndex=7
-})
-
--- Tambahkan TextButton untuk link
-local linkButton = new("TextButton",{
-    Parent=infoContainer,
-    Size=UDim2.new(1, -24, 0, 20),
-    Position=UDim2.new(0, 12, 0, 90),
-    BackgroundTransparency=1,
-    Text="🔗 Discord: https://discord.gg/6Rpvm2gQ",
-    Font=Enum.Font.GothamBold,
-    TextSize=9,
-    TextColor3=Color3.fromRGB(88, 101, 242), -- Warna Discord
-    TextXAlignment=Enum.TextXAlignment.Left,
-    ZIndex=7
-})
-
-linkButton.MouseButton1Click:Connect(function()
-    setclipboard("https://discord.gg/6Rpvm2gQ") -- Copy link ke clipboard
-    linkButton.Text = "✅ Link copied to clipboard!"
-    wait(2)
-    linkButton.Text = "🔗 Discord: https://discord.gg/6Rpvm2gQ"
-end)
-
--- ==== MINIMIZE SYSTEM ====
-local minimized = false
-local icon
-local savedIconPos = UDim2.new(0, 20, 0, 100)
-
-local function createMinimizedIcon()
-    if icon then return end
-    
-    icon = new("ImageLabel",{
-        Parent=gui,
-        Size=UDim2.new(0, 50, 0, 50),
-        Position=savedIconPos,
-        BackgroundColor3=colors.bg2,
-        BackgroundTransparency=0.3,  -- Lebih transparan dari 0.2
-        BorderSizePixel=0,
-        Image="rbxassetid://111416780887356",
-        ScaleType=Enum.ScaleType.Fit,
-        ZIndex=100
-    })
-    new("UICorner",{Parent=icon, CornerRadius=UDim.new(0, 10)})
-    new("UIStroke",{
-        Parent=icon,
-        Color=colors.primary,
-        Thickness=2,
-        Transparency=0.5  -- Lebih transparan dari 0.4
-    })
-    
-    local logoText = new("TextLabel",{
-        Parent=icon,
-        Text="L",
-        Size=UDim2.new(1, 0, 1, 0),
-        Font=Enum.Font.GothamBold,
-        TextSize=28,
-        BackgroundTransparency=1,
-        TextColor3=colors.primary,
-        Visible=icon.Image == "",
-        ZIndex=101
-    })
-    
-    local dragging, dragStart, startPos, dragMoved = false, nil, nil, false
-    
-    icon.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging, dragMoved, dragStart, startPos = true, false, input.Position, icon.Position
-        end
-    end)
-    
-    icon.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            if math.sqrt(delta.X^2 + delta.Y^2) > 5 then 
-                dragMoved = true 
-            end
-            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            TweenService:Create(icon, TweenInfo.new(0.05), {Position=newPos}):Play()
-        end
-    end)
-    
-   icon.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
-                dragging = false
-                savedIconPos = icon.Position
-                if not dragMoved then
-                    bringToFront()  -- ⬅️ TAMBAHKAN INI
-                    win.Visible = true
-                    TweenService:Create(win, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size=windowSize,
-                        Position=UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2)
-                    }):Play()
-                    if icon then 
-                        icon:Destroy() 
-                        icon = nil 
-                    end
-                    minimized = false
-                end
-            end
-        end
-    end)
-end
-
-btnMinHeader.MouseButton1Click:Connect(function()
-    if not minimized then
-        local targetPos = UDim2.new(0.5, 0, 0.5, 0)
-        TweenService:Create(win, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-            Size=UDim2.new(0, 0, 0, 0),
-            Position=targetPos
-        }):Play()
-        task.wait(0.35)
-        win.Visible = false
-        createMinimizedIcon()
-        minimized = true
-    end
-end)
-
--- ==== DRAGGING SYSTEM (From Header) - Smoother ====
-local dragging, dragStart, startPos = false, nil, nil
-
-scriptHeader.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        bringToFront()  -- ⬅️ TAMBAHKAN INI
-        dragging, dragStart, startPos = true, input.Position, win.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
+                     input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        local newPos = UDim2.new(
+        Button.Position = UDim2.new(
             startPos.X.Scale,
             startPos.X.Offset + delta.X,
             startPos.Y.Scale,
             startPos.Y.Offset + delta.Y
         )
-        TweenService:Create(win, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {Position=newPos}):Play()
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-        dragging = false 
+-- TOGGLE WINDOW
+local isOpen = true
+
+Button.MouseButton1Click:Connect(function()
+    if isOpen then
+        Window:Close()
+    else
+        Window:Open()
     end
+    isOpen = not isOpen
 end)
 
--- ==== RESIZING SYSTEM - Smoother ====
-local resizing = false
-local resizeStart, startSize = nil, nil
+-- ======================================================
+-- Hilang otomatis saat Window di-destroy
+-- ======================================================
 
-resizeHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        resizing, resizeStart, startSize = true, input.Position, win.Size
+if Window.OnDestroy then
+    Window:OnDestroy(function()
+        Button:Destroy()
+    end)
+else
+    -- fallback jika tidak ada OnDestroy: cek parent
+    Window.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            if Button and Button.Parent then
+                Button:Destroy()
+            end
+        end
+    end)
+end
+
+
+-- */  InfoTabCode  /* --
+do
+    local InviteCode = "NsT3RVZeEv"
+    local DiscordAPI = "https://discord.com/api/v10/invites/" .. InviteCode .. "?with_counts=true&with_expiration=true"
+
+    local Http = WindUI.cloneref(game:GetService("HttpService"))
+
+    local success, Response = pcall(function()
+        return Http:JSONDecode(WindUI.Creator.Request({
+            Url = DiscordAPI,
+            Method = "GET",
+            Headers = {
+                ["User-Agent"] = "WindUI/Ruinz",
+                ["Accept"] = "application/json"
+            }
+        }).Body)
+    end)
+
+    local guild = (success and Response and Response.guild) or {}
+
+    local name = guild.name or "Ruinz Discord"
+    local desc = guild.description ~= "" and guild.description or "A fun and friendly Roblox community to enjoy."
+
+    local iconUrl = (guild.icon and guild.id)
+        and ("https://cdn.discordapp.com/icons/" .. guild.id .. "/" .. guild.icon .. ".png?size=1024")
+        or nil
+
+    local bannerUrl = (guild.banner and guild.id)
+        and ("https://cdn.discordapp.com/banners/" .. guild.id .. "/" .. guild.banner .. ".png?size=512")
+        or nil
+
+    -- Create Tab
+    local InfoTab = Window:Tab({
+        Title = "Info",
+        Icon = "info"
+    })
+
+    -- Discord Section
+    InfoTab:Section({
+        Title = "Join our Discord server!",
+        TextSize = 20,
+    })
+
+    InfoTab:Paragraph({
+        Title = name,
+        Desc = desc,
+        Image = iconUrl,
+        Thumbnail = bannerUrl,
+        ImageSize = 48,
+        Buttons = {
+            {
+                Title = "Copy link",
+                Icon = "link",
+                Callback = function()
+                    setclipboard("https://discord.gg/" .. InviteCode)
+                end
+            }
+        }
+    })
+
+    InfoTab:Space()
+
+    -- About Ruinz Section
+    local AboutRuinzSection = InfoTab:Section({
+        Title = "About Ruinz",
+        Box = false,
+        Opened = true
+    })
+
+    AboutRuinzSection:Image({
+        Image = "rbxassetid://82073100937026",
+        AspectRatio = "16:9", -- landscape (fixed)
+        Radius = 9,
+    })
+
+    AboutRuinzSection:Section({
+        Title = "What is Ruinz?",
+        TextSize = 24,
+        FontWeight = Enum.FontWeight.SemiBold,
+    })
+
+    AboutRuinzSection:Section({
+        Title = [[Ruinz is a keyless Roblox script that allows players to enjoy games, explore features, and have fun without restrictions. Our goal is to make Roblox scripting easier and more enjoyable for everyone.]],
+        TextSize = 18,
+        TextTransparency = 0.15,
+        FontWeight = Enum.FontWeight.Medium,
+    })
+
+    AboutRuinzSection:Space({ Columns = 1 })
+end
+
+-- */  Colors  /* --
+local Purple = Color3.fromHex("#7775F2")
+local Yellow = Color3.fromHex("#ECA201")
+local Green  = Color3.fromHex("#10C550")
+local Grey   = Color3.fromHex("#83889E")
+local Blue   = Color3.fromHex("#257AF7")
+local Red    = Color3.fromHex("#EF4F1D")
+
+-- */  Tabs  /* --
+local MainTab = Window:Tab({ Title = "Main",     Icon = "house",          IconColor = Grey,   IconShape = "Square" })
+local AutoTab = Window:Tab({ Title = "Auto",     Icon = "repeat",         IconColor = Yellow, IconShape = "Square" })
+local ShopTab = Window:Tab({ Title = "Shop",     Icon = "shopping-cart", IconColor = Purple, IconShape = "Square" })
+local TeleTab = Window:Tab({ Title = "Teleport", Icon = "map-pin",       IconColor = Blue,   IconShape = "Square" })
+local WebTab  = Window:Tab({ Title = "Webhook",  Icon = "globe",         IconColor = Green,  IconShape = "Square" })
+local SetTab  = Window:Tab({ Title = "Setting",  Icon = "settings",      IconColor = Red,    IconShape = "Square" })
+
+
+--================
+--MAINTAB        =
+--================
+local function getNet()
+    local packages = ReplicatedStorage:FindFirstChild("Packages")
+    if packages and packages:FindFirstChild("_Index") then
+        for _, child in ipairs(packages._Index:GetChildren()) do
+            if child.Name:find("^sleitnick_net@") then
+                return child:FindFirstChild("net")
+            end
+        end
     end
-end)
+    return ReplicatedStorage:FindFirstChild("net") or ReplicatedStorage:FindFirstChild("Net")
+end
 
-UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - resizeStart
+local NET = getNet()
+
+local R = {
+    Cancel  = NET:FindFirstChild("RF/CancelFishingInputs"),
+    Charge  = NET:FindFirstChild("RF/ChargeFishingRod"),
+    Start   = NET:FindFirstChild("RF/RequestFishingMinigameStarted"),
+    Equip   = NET:FindFirstChild("RE/EquipToolFromHotbar"),
+    Done    = NET:FindFirstChild("RE/FishingCompleted"),
+	Perfection = NET:FindFirstChild("RF/UpdateAutoFishingState"),
+}
+
+--//======================================================
+--// NORMAL FISH
+--//======================================================
+
+local FuncNormal = {
+    enabled = false,
+    delay = 1
+}
+
+local function startNormalFish()
+    FuncNormal.enabled = true
+
+    while FuncNormal.enabled do
+        task.wait(0.1)
+        pcall(R.Cancel.InvokeServer, R.Cancel)
+        task.wait(0.1)
+
+        local t = Workspace:GetServerTimeNow()
+        pcall(R.Charge.InvokeServer, R.Charge, t)
+
+        task.wait(0.25)
+        pcall(R.Start.InvokeServer, R.Start, -1.238, 0.969, Workspace:GetServerTimeNow())
+
+        task.wait(FuncNormal.delay)
+        pcall(R.Done.FireServer, R.Done)
+
+        task.wait(0.3)
+    end
+end
+
+local function stopNormalFish()
+    FuncNormal.enabled = false
+end
+
+local NormalFishSection = MainTab:Section({ 
+    Title = "Normal Fishing", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+-- UI
+NormalFishSection:Toggle({
+    Title = "Normal Fish",
+    Callback = function(v)
+        R.Equip:FireServer(1)
+        if v then startNormalFish() else stopNormalFish() end
+    end
+})
+
+NormalFishSection:Slider({
+    Title = "Delay Normal",
+    Step = 0.1,
+    Value = { Min = 0, Max = 3, Default = 1 },
+    Callback = function(v)
+        FuncNormal.delay = v
+    end
+})
+
+--//======================================================
+--// BLATANT FISHING (FAST)
+--//======================================================
+
+local FuncBlatant = {
+    enabled = false,
+    biteDelay = 1.65,
+    postDelay = 0.30,
+    arg1 = -2,
+    arg2 = 1,
+}
+
+local function recast()
+	task.spawn(function()
+		pcall(R.Cancel.InvokeServer, R.Cancel)
+		task.wait(0.03)
+		pcall(R.Charge.InvokeServer, R.Charge, Workspace:GetServerTimeNow())
+		pcall(R.Start.InvokeServer, R.Start, FuncBlatant.arg1, FuncBlatant.arg2)
+	end)
+end
+
+local function reel()
+    task.spawn(function()
+   		pcall(R.Done.FireServer, R.Done)
+		task.wait(0.01)
+    end)
+
+end
+
+local function startBlatant()
+    FuncBlatant.enabled = true
+
+    while FuncBlatant.enabled do
+        recast()
+        task.wait(FuncBlatant.biteDelay)
+        reel()
+        task.wait(FuncBlatant.postDelay)
+    end
+end
+
+local function stopBlatant()
+    FuncBlatant.enabled = false
+end
+
+local BlatantFishSection = MainTab:Section({ 
+    Title = "Blatant Fishing [V1]", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+BlatantFishSection:Toggle({
+    Title = "Blatant Fish",
+    Callback = function(v)
+        R.Equip:FireServer(1)
+        if v then startBlatant() else stopBlatant() end
+    end
+})
+
+BlatantFishSection:Slider({
+    Title = "Delay Blatant",
+    Step = 0.01,
+    Value = { Min = 0.05, Max = 3, Default = FuncBlatant.biteDelay },
+    Callback = function(v)
+        FuncBlatant.biteDelay = v
+    end
+})
+
+--//======================================================
+--// BLATANT ADVANCED x5/x7 Compatible
+--//======================================================
+local Adv = {
+    enabled = false,
+    fishDelay = 1.1,
+    reelDelay = 1.9,
+}
+
+local function Fastest()
+	task.spawn(function()
+		pcall(R.Cancel.InvokeServer, R.Cancel)
+		pcall(R.Charge.InvokeServer, R.Charge, Workspace:GetServerTimeNow())
+		pcall(R.Start.InvokeServer, R.Start, -1, 0.999)
+
+		task.wait(Adv.fishDelay)
+
+		pcall(R.Done.FireServer, R.Done)
+	end)
+end
+
+local Blatantadv = MainTab:Section({ 
+    Title = "Blatant Fishing [V2]", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+-- TOGGLE BLATANT FISHING
+Blatantadv:Toggle({
+    Title = "Blatant Fishing",
+    Callback = function(v)
+        Adv.enabled = v
+
+        if v then
+            -- Equip fishing rod
+            pcall(function()
+                R.Equip:FireServer(1)
+            end)
+
+            -- Jalankan loop fishing
+            task.spawn(function()
+                while Adv.enabled do
+                    pcall(Fastest)
+                    task.wait(Adv.reelDelay)
+                end
+            end)
+        end
+    end
+})
+
+-- INPUT: Fishing Delay
+Blatantadv:Input({
+    Title = "Fishing Delay",
+    Value = tostring(Adv.fishDelay),
+    Placeholder = "enter input...",
+    Callback = function(v)
+        local n = tonumber(v)
+        if n then Adv.fishDelay = n end
+    end
+})
+
+-- INPUT: Reel Delay
+Blatantadv:Input({
+    Title = "Reel Delay",
+    Value = tostring(Adv.reelDelay),
+    Placeholder = "enter input...",
+    Callback = function(v)
+        local n = tonumber(v)
+        if n then Adv.reelDelay = n end
+    end
+})
+
+--//======================================================
+--// ULTRA BLATANT FISHING
+--//======================================================
+local UltraBlatant = {
+    Active = false,
+    Settings = {
+        CompleteDelay = 0.7,
+        CancelDelay = 0.3
+    }
+}
+
+----------------------------------------------------------------
+-- ULTRA BLATANT CORE FUNCTIONS
+----------------------------------------------------------------
+
+local function safeFire(func)
+    task.spawn(pcall, func)
+end
+
+-- Function untuk spam charge + minigame
+local function performUltraCast()
+    local currentTime = tick()
+    
+    -- Charge fishing rod
+    safeFire(function()
+        R.Charge:InvokeServer(currentTime)
+    end)
+    
+	task.wait(0.01)
+    -- Start minigame
+    safeFire(function()
+        R.Start:InvokeServer(-1, 0.999)
+    end)
+end
+
+-- Main loop
+local function ultraFishingLoop()
+    while UltraBlatant.Active do
+        -- Step 1: Ultra cast (charge + minigame)
+        performUltraCast()
         
-        local newWidth = math.clamp(
-            startSize.X.Offset + delta.X,
-            minWindowSize.X,
-            maxWindowSize.X
-        )
-        local newHeight = math.clamp(
-            startSize.Y.Offset + delta.Y,
-            minWindowSize.Y,
-            maxWindowSize.Y
-        )
+        -- Step 2: Wait complete delay
+        task.wait(UltraBlatant.Settings.CompleteDelay)
         
-        local newSize = UDim2.new(0, newWidth, 0, newHeight)
-        TweenService:Create(win, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {Size=newSize}):Play()
+        -- Step 3: Complete fishing
+        if UltraBlatant.Active then
+            safeFire(function()
+                R.Done:FireServer()
+            end)
+        end
+        
+        -- Step 4: Wait cancel delay
+        task.wait(UltraBlatant.Settings.CancelDelay)
+        
+        -- Step 5: Cancel inputs
+        if UltraBlatant.Active then
+            safeFire(function()
+                R.Cancel:InvokeServer()
+            end)
+        end
     end
-end)
+end
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then 
-        resizing = false 
+local UltraBlatantSection = MainTab:Section({ 
+    Title = "Blatant Fishing [V3]", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+MainTab:Space()
+
+-- TOGGLE ULTRA BLATANT FISHING
+UltraBlatantSection:Toggle({
+    Title = "Ultra Blatant Fishing",
+    Callback = function(v)
+        UltraBlatant.Active = v
+
+        if v then
+            -- Equip fishing rod
+            safeFire(function()
+                R.Equip:FireServer(1)
+            end)
+            
+            -- Tunggu 0.2 detik
+            task.wait(0.2)
+            
+            -- Jalankan loop fishing
+            task.spawn(ultraFishingLoop)
+        else
+            -- Cancel saat dimatikan
+            safeFire(function()
+                R.Cancel:InvokeServer()
+            end)
+        end
     end
-end)
+})
 
--- ==== OPENING ANIMATION - More dramatic ====
+-- INPUT: Complete Delay
+UltraBlatantSection:Input({
+    Title = "Complete Delay",
+    Value = tostring(UltraBlatant.Settings.CompleteDelay),
+    Placeholder = "Enter delay in seconds...",
+    Callback = function(v)
+        local num = tonumber(v)
+        if num then UltraBlatant.Settings.CompleteDelay = num end
+    end
+})
+
+-- INPUT: Cancel Delay
+UltraBlatantSection:Input({
+    Title = "Cancel Delay",
+    Value = tostring(UltraBlatant.Settings.CancelDelay),
+    Placeholder = "Enter delay in seconds...",
+    Callback = function(v)
+        local num = tonumber(v)
+        if num then UltraBlatant.Settings.CancelDelay = num end
+    end
+})
+
+--//======================================================
+--// FISHING FEATURE
+--//======================================================
+
+local FishFeature = MainTab:Section({ 
+    Title = "Fishing Feature", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+
+------------------------SUPPORT ENCHANT PERFECTION
+-- Simpan reference asli
+local oldRequest = nil
+
+-- TOGGLE AUTO PERFECTION + BLOCK CHARGE
+FishFeature:Toggle({
+    Title = "Enable Support Enchant PERFECTION",
+    Callback = function(v)
+        Adv.perfectionActivated = v -- flag toggle
+
+        if v then
+            -- Aktifkan Perfection hanya sekali saat toggle aktif
+            if not Adv.perfectionEnabled then
+                pcall(function()
+                    R.Perfection:InvokeServer(true) -- nyalakan perfection
+                end)
+                Adv.perfectionEnabled = true
+            end
+
+            -- Block RequestChargeFishingRod
+            pcall(function()
+                local FishingController = require(ReplicatedStorage.Controllers.FishingController)
+                if not oldRequest then
+                    oldRequest = FishingController.RequestChargeFishingRod
+                end
+                FishingController.RequestChargeFishingRod = function(...)
+                    return nil
+                end
+            end)
+
+        else
+            -- Toggle dimatikan → matikan perfection
+            Adv.perfectionActivated = false
+            Adv.perfectionEnabled = false
+
+            pcall(function()
+                R.Perfection:InvokeServer(false) -- matikan perfection
+
+                -- Restore fungsi asli
+                if oldRequest then
+                    local FishingController = require(ReplicatedStorage.Controllers.FishingController)
+                    FishingController.RequestChargeFishingRod = oldRequest
+                    oldRequest = nil
+                end
+            end)
+        end
+    end
+})
+
+
+
+--------------------------DISABLE CUTSCENE
+FishFeature:Toggle({
+    Title = "Disable Cutscene",
+    Default = true,
+    Callback = function(state)
+
+        local RS = game:GetService("ReplicatedStorage")
+        local Net = RS.Packages._Index["sleitnick_net@0.2.0"].net
+        local ControllerModule = RS.Controllers:FindFirstChild("CutsceneController")
+
+        if not ControllerModule then
+            warn("[CUTSCENE] Controller not found")
+            return
+        end
+
+        ------------------------------------
+        -- PCALL REQUIRE
+        ------------------------------------
+        local ok, CutsceneController = pcall(require, ControllerModule)
+        if not ok or type(CutsceneController) ~= "table" then
+            warn("[CUTSCENE] Failed to load controller:", CutsceneController)
+            return
+        end
+
+        -- SIMPAN ORIGINAL PLAY/STOP
+        if not CutsceneController._origPlay then
+            CutsceneController._origPlay = CutsceneController.Play
+            CutsceneController._origStop = CutsceneController.Stop
+        end
+
+        if state then
+            -------------------------------
+            -- 1. OVERRIDE PLAY / STOP
+            -------------------------------
+            function CutsceneController.Play(...)
+                -- block
+            end
+            function CutsceneController.Stop(...)
+                -- block
+            end
+
+            -------------------------------
+            -- 2. BLOCK NET REPLICATION
+            -------------------------------
+            if Net["RE/ReplicateCutscene"] then
+                Net["RE/ReplicateCutscene"].OnClientEvent:Connect(function()
+                    -- block
+                end)
+            end
+
+            if Net["RE/StopCutscene"] then
+                Net["RE/StopCutscene"].OnClientEvent:Connect(function()
+                    -- block
+                end)
+            end
+
+            -------------------------------
+            -- 3. DISABLE MODULESCRIPT CUTSCENES
+            -------------------------------
+            local cutFolder =
+                ControllerModule:FindFirstChild("Cutscenes")
+                or RS.Controllers:FindFirstChild("CutsceneController")
+                and RS.Controllers.CutsceneController.Cutscenes
+
+            if cutFolder then
+                for _, m in ipairs(cutFolder:GetChildren()) do
+                    if m:IsA("ModuleScript") then
+                        m.Disabled = true -- safe to leave even though no effect
+                    end
+                end
+            end
+
+        else
+            -------------------------------
+            -- RESTORE ORIGINAL
+            -------------------------------
+            if CutsceneController._origPlay then
+                CutsceneController.Play = CutsceneController._origPlay
+                CutsceneController.Stop = CutsceneController._origStop
+                warn("[CELESTIAL] Cutscene restored")
+            end
+        end
+    end
+})
+
+
+--------------------------NO ANIMATION
+local AnimFolder = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Animations")
+local noAnimEnabled = false
+local animConnections = {}
+
+FishFeature:Toggle({
+    Title = "No Animation",
+    Icon = "user-x",
+    Callback = function(value)
+        noAnimEnabled = value
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+        local animator = humanoid:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoid)
+        if value then
+            WindUI:Notify({ Title = "No Animation", Content = "Semua animasi dimatikan." })
+            for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                pcall(function() track:Stop() end)
+            end
+            local connection = animator.AnimationPlayed:Connect(function(track)
+                if noAnimEnabled then
+                    local anim = track.Animation
+                    if anim and anim:IsDescendantOf(AnimFolder) then
+                        pcall(function() track:Stop() end)
+                    end
+                end
+            end)
+            table.insert(animConnections, connection)
+        else
+            WindUI:Notify({ Title = "No Animation", Content = "Animasi diaktifkan kembali." })
+            for _, c in ipairs(animConnections) do
+                if typeof(c) == "RBXScriptConnection" then
+                    c:Disconnect()
+                end
+            end
+            animConnections = {}
+        end
+    end
+})
+
+--------------------------DISABLE POPUP NOTIFICATION
+FishFeature:Toggle({
+    Title = "Disable Popup Notification",
+    Default = false,
+
+    Callback = function(state)
+        _G.HideSmallNotif = state
+
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local gui = player:WaitForChild("PlayerGui")
+
+        -- Fungsi aman untuk hapus notification
+        local function safeDestroy(child)
+            if child and child:IsA("Instance") and child.Name == "Small Notification" then
+                pcall(function()
+                    child:Destroy()
+                end)
+            end
+        end
+
+        if state then
+            -- Hapus yang sudah ada
+            for _, v in ipairs(gui:GetChildren()) do
+                safeDestroy(v)
+            end
+
+            -- Anti-spawn: hapus setiap kali dibuat ulang
+            if not _G.NotifConn then
+                _G.NotifConn = gui.ChildAdded:Connect(function(child)
+                    if _G.HideSmallNotif then
+                        task.wait() -- sedikit delay biar child siap
+                        safeDestroy(child)
+                    end
+                end)
+            end
+        else
+            -- Matikan koneksi
+            if _G.NotifConn then
+                _G.NotifConn:Disconnect()
+                _G.NotifConn = nil
+            end
+        end
+    end
+})
+
+
+--// RESPAWN IN PLACE
+
+MainTab:Button({
+    Title = "Reset Character",
+    Icon = "refresh-cw",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+
+        -- Ambil character saat ini
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+        local humanoid = char:WaitForChild("Humanoid")
+
+        -- Simpan posisi sekarang
+        local savedCFrame = hrp.CFrame
+
+        -- Reset character untuk respawn
+        humanoid.Health = 0
+
+        -- Tunggu karakter baru muncul
+        local newChar = player.CharacterAdded:Wait()
+        task.wait(0.2) -- tunggu sebentar supaya HRP sudah tersedia
+
+        -- Ambil HumanoidRootPart baru
+        local newHrp = newChar:WaitForChild("HumanoidRootPart")
+
+        -- Teleport kembali ke posisi semula
+        newHrp.CFrame = savedCFrame
+
+        -- Equip fishing rod langsung
+        if R.Equip then
+            pcall(function()
+                R.Equip:FireServer(1)
+            end)
+        end
+    end
+})
+
+
+--================
+--AUTOTAB        =
+--================
+
+--//======================================================
+--// AUTO SELL
+--//======================================================
+local DEFAULT_DELAY = 200
+local AUTO_SELL_DELAY = DEFAULT_DELAY
+local lastSell = os.time()
+local autoSellState = false
+
+local AutoSell = AutoTab:Section({ 
+    Title = "Auto Sell", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+local delayBox
+delayBox = AutoSell:Input({
+    Title = "Auto Sell Delay",
+    Desc = "seconds",
+    Placeholder = tostring(DEFAULT_DELAY),
+    Default = tostring(DEFAULT_DELAY),
+    Numeric = true,
+    Callback = function(value)
+        local num = tonumber(value)
+        if num then
+            AUTO_SELL_DELAY = num
+            return
+        end
+        AUTO_SELL_DELAY = DEFAULT_DELAY
+        delayBox:Set(tostring(DEFAULT_DELAY))
+    end
+})
+
+AutoSell:Toggle({
+    Title = "Auto Sell",
+    Callback = function(value)
+        autoSellState = value
+        if value then
+            task.spawn(function()
+                while autoSellState do
+                    pcall(function()
+                        local net = getNet()
+                        local sellFunc = net and net:FindFirstChild("RF/SellAllItems")
+                        if sellFunc and os.time() - lastSell >= AUTO_SELL_DELAY then
+                            sellFunc:InvokeServer()
+                            lastSell = os.time()
+                        end
+                    end)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
+--//======================================================
+--// AUTO WEATHER
+--//======================================================
+
+local WeatherRemote = ReplicatedStorage
+    .Packages._Index["sleitnick_net@0.2.0"]
+    .net["RF/PurchaseWeatherEvent"]
+
+local weatherList = { 
+    "Wind", 
+    "Snow", 
+    "Cloudy", 
+    "Storm", 
+    "Shark Hunt",
+    "Radiant" 
+}
+
+local selectedWeathers = {}
+
+local AutoWeather = AutoTab:Section({ 
+    Title = "Auto Weather", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+AutoWeather:Dropdown({
+    Title = "Select Weathers",
+    Desc = "Choose up to 3 weather types.",
+    Values = weatherList,
+    Multi = true,
+    AllowNone = true,
+    Value = selectedWeathers,
+
+    Callback = function(values)
+        if #values > 3 then
+            table.remove(values, 4)
+        end
+        selectedWeathers = values
+    end
+})
+
+AutoWeather:Button({
+    Title = "Buy Selected",
+    Callback = function()
+        for _, weather in ipairs(selectedWeathers) do
+            pcall(function()
+                WeatherRemote:InvokeServer(weather)
+            end)
+            task.wait(0.3)
+        end
+    end
+})
+
+local autoBuy = false
+
+AutoWeather:Toggle({
+    Title = "Auto Buy Selected",
+    Default = false,
+    Callback = function(state)
+        autoBuy = state
+
+        if state then
+            task.spawn(function()
+                while autoBuy do
+
+                    -- ambil weather aktif
+                    local active = {}
+                    local folder = workspace:FindFirstChild("Weather")
+
+                    if folder then
+                        for _, w in ipairs(folder:GetChildren()) do
+                            active[string.lower(w.Name)] = true
+                        end
+                    end
+
+                    -- cek weather yang dipilih
+                    for _, weather in ipairs(selectedWeathers) do
+                        if not active[string.lower(weather)] then
+                            pcall(function()
+                                WeatherRemote:InvokeServer(weather)
+                            end)
+                            task.wait(0.5)
+                        end
+                    end
+
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
+
+
+
+
+--//======================================================
+--// AUTO ADMIN EVENT
+--//======================================================
+local AdminEvent = AutoTab:Section({ 
+    Title = "Auto Admin Event", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+AutoTab:Space()
+
+-- GUI untuk menampilkan status
+local countdownParagraph = AdminEvent:Paragraph({
+    Title = "Ancient Lochness Monster Countdown",
+    Desc = "<font color='#FF4D4D'><b>Waiting for event...</b></font>"
+})
+
+-- State utama
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local farmPosition = nil
+local autoEventEnabled = false
+
+-- Ambil label countdown
+local function getCountdownLabel()
+    local ok, label = pcall(function()
+        return workspace["!!! DEPENDENCIES"]["Event Tracker"].Main.Gui.Content.Items.Countdown.Label
+    end)
+    return ok and label or nil
+end
+
+-- Teleport ke event
+local function goToEvent(hrp)
+    hrp.CFrame = CFrame.new(Vector3.new(6063, -586, 4715))
+end
+
+-- Kembali ke posisi farm
+local function returnToFarm(hrp)
+    if farmPosition then
+        hrp.CFrame = farmPosition
+        countdownParagraph:SetDesc("<font color='#00FF99'><b>Returned to saved farm position!</b></font>")
+    else
+        countdownParagraph:SetDesc("<font color='#FF4D4D'><b>No saved farm position found!</b></font>")
+    end
+end
+
+-- Toggle utama untuk teleport
+AdminEvent:Toggle({
+    Title = "Auto Lochness Event",
+    Value = false,
+    Callback = function(state)
+        autoEventEnabled = state
+
+        if autoEventEnabled then
+            -- Simpan posisi farm
+            local hrp = (player.Character or player.CharacterAdded:Wait()):WaitForChild("HumanoidRootPart", 5)
+            if hrp then
+                farmPosition = hrp.CFrame
+            end
+        else
+            -- toggle off → kembali ke farm
+            local hrp = (player.Character or player.CharacterAdded:Wait()):WaitForChild("HumanoidRootPart", 5)
+            if hrp then
+                returnToFarm(hrp)
+            end
+        end
+    end
+})
+
+-- Loop update countdown GUI (selalu jalan)
 task.spawn(function()
-    win.Size = UDim2.new(0, 0, 0, 0)
-    win.Position = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2)
-    win.BackgroundTransparency = 1
-    
-    task.wait(0.1)
-    
-    -- Expand with bounce
-    TweenService:Create(win, TweenInfo.new(0.7, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), {
-        Size=windowSize
-    }):Play()
-    
-    -- Fade in
-    TweenService:Create(win, TweenInfo.new(0.5), {
-        BackgroundTransparency=0.25  -- Lebih transparan dari 0.15
-    }):Play()
+    local label = getCountdownLabel()
+    while true do
+        task.wait(1)
+        if not label or not label.Parent then
+            label = getCountdownLabel()
+        end
+        local text = ""
+        if label then
+            pcall(function() text = label.Text or "" end)
+        end
+        if text == "" then
+            countdownParagraph:SetDesc("<font color='#FF4D4D'><b>Waiting for countdown...</b></font>")
+        else
+            countdownParagraph:SetDesc(string.format("<font color='#FF7A00'><b>Timer: %s</b></font>", text))
+        end
+
+        -- Handle teleport otomatis hanya jika toggle aktif
+        if autoEventEnabled and label and text ~= "" then
+            local hrp = (player.Character or player.CharacterAdded:Wait()):WaitForChild("HumanoidRootPart", 5)
+            if hrp then
+                local h, m, s = text:match("(%d+)H%s*(%d+)M%s*(%d+)S")
+                h, m, s = tonumber(h), tonumber(m), tonumber(s)
+                if h == 3 and m == 59 and s == 59 then
+                    goToEvent(hrp)
+                elseif h == 3 and m == 49 and s == 59 then
+                    returnToFarm(hrp)
+                end
+            end
+        end
+    end
 end)
 
-print("━━━━━━━━━━━━━━━━━━━━━━")
-print("✨ Lynx GUI v2.3 ")
-print("FREE NOT FOR SALE")
-print("━━━━━━━━━━━━━━━━━━━━━━")
-print("💎 Created by Lynx Team")
-print("━━━━━━━━━━━━━━━━━━━━━━")
+--//======================================================
+--// AUTO CHRISTMAS CAVE - INDONESIA TIME (WIB)
+--//======================================================
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
---nah modifikasi tampilan nya aja gtu
+-- Jadwal Christmas Cave dalam Waktu Indonesia (WIB) - GMT+7
+local ChristmasCaveSchedule = {
+    "01:00", "01:30",
+    "03:00", "03:30", 
+    "05:00", "05:30",
+    "07:00", "07:30",
+    "09:00", "09:30",
+    "11:00", "11:30",
+    "13:00", "13:30",
+    "15:00", "15:30",
+    "17:00", "17:30",
+    "19:00", "19:30",
+    "21:00", "21:30",
+    "23:00", "23:30"
+}
+
+-- State utama
+local autoChristmasCave = false
+local checkThread = nil
+local isAtChristmasCave = false
+local lastPosition = nil
+
+-- Koordinat Christmas Cave (adjust sesuai lokasi)
+local CHRISTMAS_CAVE_POSITION = CFrame.new(541.647, -580.581, 8902.609) * CFrame.Angles(0.000000, -1.728958, 0.000000)
+
+AdminEvent:Space()
+
+-- GUI untuk menampilkan status
+local statusParagraph = AdminEvent:Paragraph({
+    Title = "Christmas Cave Status",
+    Desc = "Waiting for next schedule..."
+})
+
+-- Fungsi untuk mendapatkan waktu UTC saat ini
+local function getUTCTime()
+    local now = os.date("!*t")  -- ! untuk UTC
+    return now.hour, now.min, now.sec
+end
+
+-- Fungsi untuk mengonversi UTC ke Waktu Indonesia (WIB) - GMT+7
+local function convertUTCtoWIB(utcHour, utcMin, utcSec)
+    local wibHour = (utcHour + 7) % 24  -- Indonesia WIB = UTC + 7
+    return wibHour, utcMin, utcSec
+end
+
+-- Fungsi untuk mendapatkan waktu Indonesia (WIB) saat ini dalam format HH:MM
+local function getIndonesiaTime()
+    local utcHour, utcMin, utcSec = getUTCTime()
+    local wibHour, wibMin, wibSec = convertUTCtoWIB(utcHour, utcMin, utcSec)
+    return string.format("%02d:%02d", wibHour, wibMin)
+end
+
+-- Fungsi untuk mendapatkan waktu Indonesia (WIB) saat ini dalam total detik
+local function getIndonesiaTimeInSeconds()
+    local utcHour, utcMin, utcSec = getUTCTime()
+    local wibHour, wibMin, wibSec = convertUTCtoWIB(utcHour, utcMin, utcSec)
+    return wibHour * 3600 + wibMin * 60 + wibSec
+end
+
+-- Fungsi untuk mengubah waktu HH:MM ke total detik
+local function timeToSeconds(timeStr)
+    local hour, minute = timeStr:match("(%d+):(%d+)")
+    return tonumber(hour) * 3600 + tonumber(minute) * 60
+end
+
+-- Fungsi untuk mendapatkan waktu schedule berikutnya
+local function getNextScheduleTime()
+    local currentSeconds = getIndonesiaTimeInSeconds()
+    
+    -- Cari schedule berikutnya
+    for i = 1, #ChristmasCaveSchedule, 2 do -- Hanya check waktu start (index ganjil)
+        local startTime = ChristmasCaveSchedule[i]
+        local startSeconds = timeToSeconds(startTime)
+        
+        -- Jika schedule belum lewat hari ini
+        if startSeconds > currentSeconds then
+            return startTime, i
+        end
+    end
+    
+    -- Jika tidak ada schedule hari ini, kembalikan schedule pertama besok
+    return ChristmasCaveSchedule[1], 1
+end
+
+-- Fungsi untuk format waktu
+local function formatTime(seconds)
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    
+    return string.format("%02d:%02d:%02d", hours, minutes, secs)
+end
+
+-- Simpan posisi saat ini
+local function saveCurrentPosition()
+    local character = player.Character
+    if character then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            lastPosition = hrp.CFrame
+        end
+    end
+end
+
+-- Teleport ke Christmas Cave
+local function goToChristmasCave()
+    local character = player.Character
+    if character then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            -- Simpan posisi saat ini sebelum teleport
+            if not isAtChristmasCave then
+                lastPosition = hrp.CFrame
+            end
+            hrp.CFrame = CHRISTMAS_CAVE_POSITION
+            statusParagraph:SetDesc("Teleported to Christmas Cave!")
+            isAtChristmasCave = true
+        end
+    end
+end
+
+-- Kembali ke posisi terakhir
+local function returnToLastPosition()
+    local character = player.Character
+    if character and lastPosition then
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = lastPosition
+            statusParagraph:SetDesc("Returned to last position!")
+            isAtChristmasCave = false
+        end
+    end
+end
+
+-- Main check loop
+local function startCheckLoop()
+    while autoChristmasCave do
+        local indonesiaTime = getIndonesiaTime()
+        local localTime = os.date("%H:%M")  -- Waktu lokal device (untuk info saja)
+        local currentSeconds = getIndonesiaTimeInSeconds()
+        local nextTime, nextIndex = getNextScheduleTime()
+        local nextSeconds = timeToSeconds(nextTime)
+        
+        -- Hitung selisih waktu
+        local secondsUntilNext = nextSeconds - currentSeconds
+        if secondsUntilNext < 0 then
+            secondsUntilNext = secondsUntilNext + 24 * 3600 -- Untuk schedule besok
+        end
+        
+        -- Update status dengan info lengkap
+        statusParagraph:SetDesc(string.format(
+            "Indonesia Time (WIB): %s\nLocal Device Time: %s\nNext Event: %s (in %s)\nUsing INDONESIA Timezone (GMT+7)",
+            indonesiaTime,
+            localTime,
+            nextTime, 
+            formatTime(secondsUntilNext)
+        ))
+        
+        -- Check apakah saat ini adalah waktu event
+        local inEventTime = false
+        for i = 1, #ChristmasCaveSchedule, 2 do -- Loop hanya waktu start (ganjil)
+            local startTime = ChristmasCaveSchedule[i]
+            local endTime = ChristmasCaveSchedule[i + 1]
+            local startSeconds = timeToSeconds(startTime)
+            local endSeconds = timeToSeconds(endTime)
+            
+            -- Check jika current Indonesia time berada dalam rentang event
+            if currentSeconds >= startSeconds and currentSeconds <= endSeconds then
+                inEventTime = true
+                -- Saat event berlangsung, teleport ke Christmas Cave jika belum di sana
+                if not isAtChristmasCave then
+                    goToChristmasCave()
+                end
+                break
+            end
+        end
+        
+        -- Jika bukan waktu event dan masih di Christmas Cave, kembali ke posisi terakhir
+        if not inEventTime and isAtChristmasCave then
+            returnToLastPosition()
+        end
+        
+        -- Tunggu 1 detik sebelum check lagi
+        task.wait(1)
+    end
+    
+    -- Saat loop berhenti, reset status
+    statusParagraph:SetDesc("Auto Christmas Cave is OFF")
+    
+    -- Kembali ke posisi terakhir jika masih di Christmas Cave
+    if isAtChristmasCave then
+        returnToLastPosition()
+    end
+end
+
+-- Toggle utama
+AdminEvent:Toggle({
+    Title = "Auto Christmas Cave (Indonesia Time)",
+    Value = false,
+    Callback = function(state)
+        autoChristmasCave = state
+        
+        if autoChristmasCave then
+            -- Simpan posisi saat ini sebelum mulai
+            saveCurrentPosition()
+            
+            -- Tampilkan info timezone
+            local indonesiaTime = getIndonesiaTime()
+            local localTime = os.date("%H:%M")
+            statusParagraph:SetDesc(string.format(
+                "Position saved!\nIndonesia Time (WIB): %s\nLocal Device Time: %s\nWaiting for event...",
+                indonesiaTime,
+                localTime
+            ))
+            
+            -- Mulai loop checking
+            checkThread = task.spawn(startCheckLoop)
+        else
+            -- Hentikan loop
+            if checkThread then
+                task.cancel(checkThread)
+                checkThread = nil
+            end
+            
+            -- Kembali ke posisi terakhir jika masih di Christmas Cave
+            if isAtChristmasCave then
+                returnToLastPosition()
+            end
+        end
+    end
+})
+
+-- Button untuk manual teleport
+AdminEvent:Button({
+    Title = "Teleport Now",
+    Content = "Teleport to Christmas Cave",
+    Callback = function()
+        goToChristmasCave()
+    end
+})
+
+-- Button untuk manual return
+AdminEvent:Button({
+    Title = "Return to Position",
+    Content = "Return to last saved position",
+    Callback = function()
+        returnToLastPosition()
+    end
+})
+
+-- Button untuk check timezone
+AdminEvent:Button({
+    Title = "Check Timezone",
+    Content = "Show current Indonesia vs Local time",
+    Callback = function()
+        local indonesiaTime = getIndonesiaTime()
+        local localTime = os.date("%H:%M")
+        local utcTime = os.date("!%H:%M")
+        
+        statusParagraph:SetDesc(string.format(
+            "Timezone Info:\nIndonesia (WIB): %s\nLocal Device: %s\nUTC: %s\nOffset: Indonesia = UTC + 7 hours",
+            indonesiaTime,
+            localTime,
+            utcTime
+        ))
+    end
+})
+
+--================
+--SHOP TAB       =
+--================
+
+
+-- References ke ReplicatedStorage dan Remotes
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local NetPackage = ReplicatedStorage.Packages._Index["sleitnick_net@0.2.0"].net
+
+local BuyRodRemote  = NetPackage["RF/PurchaseFishingRod"]
+local BuyBaitRemote = NetPackage["RF/PurchaseBait"]
+
+-- Tables untuk menyimpan data rod/bait
+local Rods = {}
+local RodDisplayNames = {}
+
+local Baits = {}
+local BaitDisplayNames = {}
+
+-- Load semua rod dari Items folder
+local ItemsFolder = ReplicatedStorage:WaitForChild("Items")
+for _, itemModule in ipairs(ItemsFolder:GetChildren()) do
+    if itemModule:IsA("ModuleScript") and itemModule.Name:match("Rod") then
+        local success, data = pcall(require, itemModule)
+        if success and typeof(data) == "table" and data.Data then
+            local name = data.Data.Name or "Unknown"
+            local id = data.Data.Id or "Unknown"
+            local price = data.Price or 0
+            local display = name .. " ($" .. price .. ")"
+
+            local rodInfo = { Name = name, Id = id, Price = price, Display = display }
+
+            Rods[name] = rodInfo
+            Rods[id] = rodInfo
+            table.insert(RodDisplayNames, display)
+        end
+    end
+end
+
+-- Load semua bait dari Baits folder
+local BaitsFolder = ReplicatedStorage:WaitForChild("Baits")
+for _, baitModule in ipairs(BaitsFolder:GetChildren()) do
+    if baitModule:IsA("ModuleScript") then
+        local success, data = pcall(require, baitModule)
+        if success and typeof(data) == "table" and data.Data then
+            local name = data.Data.Name or "Unknown"
+            local id = data.Data.Id or "Unknown"
+            local price = data.Price or 0
+            local display = name .. " ($" .. price .. ")"
+
+            local baitInfo = { Name = name, Id = id, Price = price, Display = display }
+
+            Baits[name] = baitInfo
+            Baits[id] = baitInfo
+            table.insert(BaitDisplayNames, display)
+        end
+    end
+end
+
+local selectedRods = {}
+local selectedBaits = {}
+
+--//======================================================
+--// SHOP ROD
+--//======================================================
+local ShopRod = ShopTab:Section({ 
+    Title = "Rod Shop",
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+-- Dropdown Rod
+ShopRod:Dropdown({
+    Title = "Select Rods",
+    Desc = "Choose rods to buy",
+	SearchBarEnabled = true,
+    Values = RodDisplayNames,
+    Multi = true,
+    AllowNone = true,
+    Value = selectedRods,
+
+    Callback = function(values)
+        selectedRods = values
+    end
+})
+
+-- Button Buy Rod
+ShopRod:Button({
+    Title = "Buy Selected Rods",
+    Callback = function()
+        if #selectedRods == 0 then return end
+
+        for _, rodDisplay in ipairs(selectedRods) do
+            local rodName = rodDisplay:match("^(.-) %(") -- ambil nama sebelum ($price)
+            local rod = Rods[rodName]
+            if rod then
+                pcall(function()
+                    BuyRodRemote:InvokeServer(rod.Id)
+                end)
+                task.wait(1)
+            end
+        end
+    end
+})
+
+--//======================================================
+--// SHOP BAIT
+--//======================================================
+local ShopBait = ShopTab:Section({ 
+    Title = "Bait Shop",
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+-- Dropdown Bait
+ShopBait:Dropdown({
+    Title = "Select Baits",
+    Desc = "Choose baits to buy",
+	SearchBarEnabled = true,
+    Values = BaitDisplayNames,
+    Multi = true,
+    AllowNone = true,
+    Value = selectedBaits,
+
+    Callback = function(values)
+        selectedBaits = values
+    end
+})
+
+-- Button Buy Bait
+ShopBait:Button({
+    Title = "Buy Selected Baits",
+    Callback = function()
+        if #selectedBaits == 0 then return end
+
+        for _, baitDisplay in ipairs(selectedBaits) do
+            local baitName = baitDisplay:match("^(.-) %(")
+            local bait = Baits[baitName]
+            if bait then
+                pcall(function()
+                    BuyBaitRemote:InvokeServer(bait.Id)
+                end)
+                task.wait(1)
+            end
+        end
+    end
+})
+
+-- =================================================================
+-- AUTO TOTEM SECTION
+-- =================================================================
+local AutoTotem = AutoTab:Section({ 
+    Title = "Auto Totem", 
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+-- =================================================================
+-- REMOTE DEFINITIONS UNTUK AUTO TOTEM
+-- =================================================================
+local RPath = {"Packages", "_Index", "sleitnick_net@0.2.0", "net"}
+local RepStorage = game:GetService("ReplicatedStorage")
+
+-- Fungsi helper untuk mendapatkan remote
+local function GetRemote(remotePath, name, timeout)
+    local currentInstance = RepStorage
+    for _, childName in ipairs(remotePath) do
+        currentInstance = currentInstance:WaitForChild(childName, timeout or 0.5)
+        if not currentInstance then return nil end
+    end
+    return currentInstance:FindFirstChild(name)
+end
+
+-- REMOTE YANG DIGUNAKAN OLEH AUTO TOTEM:
+local RE_SpawnTotem = GetRemote(RPath, "RE/SpawnTotem") -- Untuk spawn totem
+local RE_EquipToolFromHotbar = GetRemote(RPath, "RE/EquipToolFromHotbar") -- Equip rod setelah spawn
+local RF_EquipOxygenTank = GetRemote(RPath, "RF/EquipOxygenTank") -- Anti-drown (ID 105)
+local RF_UnequipOxygenTank = GetRemote(RPath, "RF/UnequipOxygenTank") -- Lepas oxygen tank
+
+-- Remote tambahan yang mungkin digunakan:
+local RE_EquipItem = GetRemote(RPath, "RE/EquipItem")
+local RE_UnequipItem = GetRemote(RPath, "RE/UnequipItem")
+
+-- =================================================================
+-- STATUS DISPLAY
+-- =================================================================
+local TOTEM_STATUS_PARAGRAPH = AutoTotem:Paragraph({ 
+    Title = "Status: Inactive", 
+    Content = "Select totem type and enable", 
+    Icon = "clock" 
+})
+
+-- =================================================================
+-- TOTEM DATA & VARIABLES
+-- =================================================================
+local TOTEM_DATA = {
+    ["Luck Totem"] = {Id = 1, Duration = 3601},     -- 1 jam 1 detik
+    ["Mutation Totem"] = {Id = 2, Duration = 3601}, -- 1 jam 1 detik
+    ["Shiny Totem"] = {Id = 3, Duration = 3601}     -- 1 jam 1 detik
+}
+
+local TOTEM_NAMES = {"Luck Totem", "Mutation Totem", "Shiny Totem"}
+local selectedTotemName = "Luck Totem"
+local currentTotemExpiry = 0
+local AUTO_TOTEM_ACTIVE = false
+local AUTO_TOTEM_THREAD = nil
+
+local RunService = game:GetService("RunService")
+
+-- =================================================================
+-- 9 TOTEM FORMATION POSITIONS
+-- =================================================================
+local REF_CENTER = Vector3.new(93.932, 9.532, 2684.134)
+local REF_SPOTS = {
+    -- TENGAH (Y ~ 9.5)
+    Vector3.new(45.0468979, 9.51625347, 2730.19067),   -- 1
+    Vector3.new(145.644608, 9.51625347, 2721.90747),   -- 2
+    Vector3.new(84.6406631, 10.2174253, 2636.05786),   -- 3
+
+    -- ATAS (Y ~ 109.5)
+    Vector3.new(45.0468979, 110.516253, 2730.19067),   -- 4
+    Vector3.new(145.644608, 110.516253, 2721.90747),   -- 5
+    Vector3.new(84.6406631, 111.217425, 2636.05786),   -- 6
+
+    -- BAWAH (Y ~ -90.5)
+    Vector3.new(45.0468979, -92.483747, 2730.19067),   -- 7
+    Vector3.new(145.644608, -92.483747, 2721.90747),   -- 8
+    Vector3.new(84.6406631, -93.782575, 2636.05786),   -- 9
+}
+
+local AUTO_9_TOTEM_ACTIVE = false
+local AUTO_9_TOTEM_THREAD = nil
+local stateConnection = nil -- Untuk loop pemaksa state
+
+-- =================================================================
+-- FLY ENGINE V3 (PHYSICS + STATE MANAGEMENT)
+-- =================================================================
+local function GetFlyPart()
+    local char = game.Players.LocalPlayer.Character
+    if not char then return nil end
+    return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
+end
+
+-- ANTI-FALL STATE MANAGER
+local function MaintainAntiFallState(enable)
+    local char = game.Players.LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not hum then return end
+
+    if enable then
+        -- Matikan semua state yang berhubungan dengan fisika jatuh
+        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.PlatformStanding, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.RunningNoPhysics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, false)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+
+        -- Paksa state jadi SWIMMING (stabil di udara)
+        if not stateConnection then
+            stateConnection = RunService.Heartbeat:Connect(function()
+                if hum and AUTO_9_TOTEM_ACTIVE then
+                    hum:ChangeState(Enum.HumanoidStateType.Swimming)
+                    hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+                end
+            end)
+        end
+    else
+        -- Matikan loop
+        if stateConnection then 
+            stateConnection:Disconnect() 
+            stateConnection = nil 
+        end
+        
+        -- Kembalikan state normal
+        hum:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Landed, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        hum:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+        
+        hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+    end
+end
+
+local function EnableV3Physics()
+    local char = game.Players.LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    local mainPart = GetFlyPart()
+    
+    if not mainPart or not hum then return end
+
+    -- Matikan animasi
+    if char:FindFirstChild("Animate") then 
+        char.Animate.Disabled = true 
+    end
+    
+    hum.PlatformStand = true 
+    
+    -- Aktifkan anti-fall
+    MaintainAntiFallState(true)
+
+    -- Setup BodyVelocity & Gyro
+    local bg = mainPart:FindFirstChild("FlyGuiGyro") or Instance.new("BodyGyro", mainPart)
+    bg.Name = "FlyGuiGyro"
+    bg.P = 9e4 
+    bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+    bg.CFrame = mainPart.CFrame
+
+    local bv = mainPart:FindFirstChild("FlyGuiVelocity") or Instance.new("BodyVelocity", mainPart)
+    bv.Name = "FlyGuiVelocity"
+    bv.velocity = Vector3.new(0, 0.1, 0) -- Idle velocity
+    bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+    -- NoClip loop
+    task.spawn(function()
+        while AUTO_9_TOTEM_ACTIVE and char do
+            for _, v in ipairs(char:GetDescendants()) do
+                if v:IsA("BasePart") then 
+                    v.CanCollide = false 
+                end
+            end
+            task.wait(0.1)
+        end
+    end)
+end
+
+local function DisableV3Physics()
+    local char = game.Players.LocalPlayer.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    local mainPart = GetFlyPart()
+
+    if mainPart then
+        -- Hapus body mover
+        if mainPart:FindFirstChild("FlyGuiGyro") then 
+            mainPart.FlyGuiGyro:Destroy() 
+        end
+        if mainPart:FindFirstChild("FlyGuiVelocity") then 
+            mainPart.FlyGuiVelocity:Destroy() 
+        end
+        
+        -- Hentikan momentum
+        mainPart.Velocity = Vector3.zero
+        mainPart.RotVelocity = Vector3.zero
+        mainPart.AssemblyLinearVelocity = Vector3.zero 
+        mainPart.AssemblyAngularVelocity = Vector3.zero
+
+        -- Tegakkan karakter
+        local x, y, z = mainPart.CFrame:ToEulerAnglesYXZ()
+        mainPart.CFrame = CFrame.new(mainPart.Position) * CFrame.fromEulerAnglesYXZ(0, y, 0)
+        
+        -- Angkat sedikit
+        local ray = Ray.new(mainPart.Position, Vector3.new(0, -5, 0))
+        local hit, pos = workspace:FindPartOnRay(ray, char)
+        if hit then
+            mainPart.CFrame = mainPart.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+
+    if hum then 
+        hum.PlatformStand = false 
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+    
+    -- Matikan anti-fall
+    MaintainAntiFallState(false) 
+    
+    -- Nyalakan animasi kembali
+    if char and char:FindFirstChild("Animate") then 
+        char.Animate.Disabled = false 
+    end
+    
+    -- Restore collision
+    if char then
+        for _, v in ipairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then 
+                v.CanCollide = true 
+            end
+        end
+    end
+end
+
+-- Fungsi gerak physics
+local function FlyPhysicsTo(targetPos)
+    local mainPart = GetFlyPart()
+    if not mainPart then return end
+    
+    local bv = mainPart:FindFirstChild("FlyGuiVelocity")
+    local bg = mainPart:FindFirstChild("FlyGuiGyro")
+    
+    if not bv or not bg then 
+        EnableV3Physics()
+        bv = mainPart.FlyGuiVelocity
+        bg = mainPart.FlyGuiGyro
+    end
+
+    local SPEED = 80 
+    
+    while AUTO_9_TOTEM_ACTIVE do
+        local currentPos = mainPart.Position
+        local diff = targetPos - currentPos
+        local dist = diff.Magnitude
+        
+        bg.CFrame = CFrame.lookAt(currentPos, targetPos)
+
+        if dist < 1.0 then 
+            bv.velocity = Vector3.new(0, 0.1, 0)
+            break
+        else
+            bv.velocity = diff.Unit * SPEED
+        end
+        RunService.Heartbeat:Wait()
+    end
+end
+
+-- =================================================================
+-- HELPER FUNCTIONS
+-- =================================================================
+local function GetPlayerDataReplion()
+    local ReplionModule = RepStorage:WaitForChild("Packages"):WaitForChild("Replion", 5)
+    if not ReplionModule then return nil end
+    return require(ReplionModule).Client:WaitReplion("Data", 5)
+end
+
+local function GetTotemUUID(name)
+    local r = GetPlayerDataReplion() 
+    if not r then return nil end
+    
+    local s, d = pcall(function() 
+        return r:GetExpect("Inventory") 
+    end)
+    
+    if s and d.Totems then 
+        for _, i in ipairs(d.Totems) do 
+            if tonumber(i.Id) == TOTEM_DATA[name].Id and (i.Count or 1) >= 1 then 
+                return i.UUID 
+            end 
+        end 
+    end
+    return nil
+end
+
+-- =================================================================
+-- LOGIC 9 TOTEM (ANTI-DROWN / INFINITE OXYGEN)
+-- =================================================================
+local function Run9TotemLoop()
+    if AUTO_9_TOTEM_THREAD then 
+        task.cancel(AUTO_9_TOTEM_THREAD) 
+    end
+    
+    AUTO_9_TOTEM_THREAD = task.spawn(function()
+        -- Cek inventory
+        local uuid = GetTotemUUID(selectedTotemName)
+        if not uuid then 
+            WindUI:Notify({ 
+                Title = "No Stock", 
+                Content = "Isi inventory dulu!", 
+                Duration = 3, 
+                Icon = "x" 
+            })
+            local t = AutoTotem:GetElementByTitle("Auto Spawn 9 Totem")
+            if t then 
+                t:Set(false) 
+            end
+            return 
+        end
+
+        local char = game.Players.LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
+        
+        if not hrp then 
+            WindUI:Notify({ 
+                Title = "Error", 
+                Content = "Character not found!", 
+                Duration = 2, 
+                Icon = "x" 
+            })
+            return 
+        end
+        
+        local myStartPos = hrp.Position 
+
+        WindUI:Notify({ 
+            Title = "Started", 
+            Content = "V3 Engine + Oxygen Protection!", 
+            Duration = 3, 
+            Icon = "zap" 
+        })
+        
+        -- [ANTI-DROWN] Pasang Oxygen Tank (ID 105)
+        if RF_EquipOxygenTank then
+            pcall(function() 
+                RF_EquipOxygenTank:InvokeServer(105) 
+            end)
+        end
+        
+        -- Isi darah penuh
+        if hum then 
+            hum.Health = hum.MaxHealth 
+        end
+
+        -- Aktifkan physics
+        EnableV3Physics()
+
+        -- Loop 9 titik spawn
+        for i, refSpot in ipairs(REF_SPOTS) do
+            if not AUTO_9_TOTEM_ACTIVE then break end
+            
+            local relativePos = refSpot - REF_CENTER
+            local targetPos = myStartPos + relativePos
+            
+            TOTEM_STATUS_PARAGRAPH:SetDesc(string.format("Flying to #%d...", i))
+            FlyPhysicsTo(targetPos) 
+            
+            -- Stabilisasi
+            task.wait(0.6) 
+
+            -- Cek ulang UUID
+            uuid = GetTotemUUID(selectedTotemName)
+            if uuid then
+                TOTEM_STATUS_PARAGRAPH:SetDesc(string.format("Spawning #%d...", i))
+                
+                -- Spawn totem
+                pcall(function() 
+                    RE_SpawnTotem:FireServer(uuid) 
+                end)
+                
+                -- Re-equip rod
+                task.spawn(function() 
+                    for k = 1, 5 do 
+                        pcall(function() 
+                            RE_EquipToolFromHotbar:FireServer(1) 
+                        end)
+                        task.wait(0.1) 
+                    end 
+                end)
+            else
+                WindUI:Notify({ 
+                    Title = "Out of Stock", 
+                    Content = "Totem habis!", 
+                    Duration = 2, 
+                    Icon = "x" 
+                })
+                break
+            end
+            
+            task.wait(1.5) 
+        end
+
+        if AUTO_9_TOTEM_ACTIVE then
+            TOTEM_STATUS_PARAGRAPH:SetDesc("Returning...")
+            FlyPhysicsTo(myStartPos)
+            task.wait(0.5)
+            
+            WindUI:Notify({ 
+                Title = "Selesai", 
+                Content = "9 Totem berhasil di-spawn!", 
+                Duration = 3, 
+                Icon = "check" 
+            })
+        end
+        
+        -- [CLEANUP] Lepas Oxygen Tank
+        if RF_UnequipOxygenTank then
+            pcall(function() 
+                RF_UnequipOxygenTank:InvokeServer() 
+            end)
+        end
+
+        -- Matikan physics
+        DisableV3Physics() 
+        
+        AUTO_9_TOTEM_ACTIVE = false
+        local t = AutoTotem:GetElementByTitle("Auto Spawn 9 Totem")
+        if t then 
+            t:Set(false) 
+        end
+        
+        TOTEM_STATUS_PARAGRAPH:SetDesc("Waiting...")
+        TOTEM_STATUS_PARAGRAPH:SetTitle("Status: Inactive")
+    end)
+end
+
+-- =================================================================
+-- LOGIC SINGLE TOTEM
+-- =================================================================
+local function RunAutoTotemLoop()
+    if AUTO_TOTEM_THREAD then 
+        task.cancel(AUTO_TOTEM_THREAD) 
+    end
+    
+    AUTO_TOTEM_THREAD = task.spawn(function()
+        while AUTO_TOTEM_ACTIVE do
+            local timeLeft = currentTotemExpiry - os.time()
+            
+            if timeLeft > 0 then
+                -- Tampilkan waktu tersisa
+                local m = math.floor((timeLeft % 3600) / 60)
+                local s = math.floor(timeLeft % 60)
+                TOTEM_STATUS_PARAGRAPH:SetDesc(string.format("Next Spawn: %02d:%02d", m, s))
+                TOTEM_STATUS_PARAGRAPH:SetTitle("Status: " .. selectedTotemName .. " Active")
+            else
+                -- Spawn totem
+                TOTEM_STATUS_PARAGRAPH:SetDesc("Spawning Single...")
+                local uuid = GetTotemUUID(selectedTotemName)
+                
+                if uuid then
+                    -- Spawn totem
+                    pcall(function() 
+                        RE_SpawnTotem:FireServer(uuid) 
+                    end)
+                    
+                    currentTotemExpiry = os.time() + TOTEM_DATA[selectedTotemName].Duration
+                    
+                    -- Re-equip rod
+                    task.spawn(function() 
+                        for i = 1, 3 do 
+                            task.wait(0.2) 
+                            pcall(function() 
+                                RE_EquipToolFromHotbar:FireServer(1) 
+                            end) 
+                        end 
+                    end)
+                    
+                    WindUI:Notify({ 
+                        Title = "Totem Spawned", 
+                        Content = selectedTotemName .. " diaktifkan", 
+                        Duration = 2, 
+                        Icon = "check" 
+                    })
+                else
+                    WindUI:Notify({ 
+                        Title = "Out of Stock", 
+                        Content = "Tidak ada totem di inventory", 
+                        Duration = 2, 
+                        Icon = "x" 
+                    })
+                end
+            end
+            
+            task.wait(1)
+        end
+        
+        TOTEM_STATUS_PARAGRAPH:SetDesc("Inactive")
+        TOTEM_STATUS_PARAGRAPH:SetTitle("Status: Inactive")
+    end)
+end
+
+-- =================================================================
+-- UI CONTROLS
+-- =================================================================
+
+-- Dropdown pilih jenis totem
+AutoTotem:Dropdown({ 
+    Title = "Pilih Jenis Totem", 
+    Values = TOTEM_NAMES, 
+    Value = selectedTotemName, 
+    Multi = false, 
+    Callback = function(n) 
+        selectedTotemName = n
+        currentTotemExpiry = 0
+        
+        TOTEM_STATUS_PARAGRAPH:SetTitle("Status: " .. n)
+        TOTEM_STATUS_PARAGRAPH:SetDesc("Selected")
+        
+        WindUI:Notify({ 
+            Title = "Totem Dipilih", 
+            Content = "Menggunakan " .. n, 
+            Duration = 2, 
+            Icon = "check" 
+        })
+    end 
+})
+
+-- Toggle untuk Auto Totem Single
+AutoTotem:Toggle({ 
+    Title = "Enable Auto Totem (Single)", 
+    Desc = "Mode Normal - Spawn 1 totem setiap 1 jam", 
+    Value = false, 
+    Flag = "toggletotem", 
+    Callback = function(s) 
+        AUTO_TOTEM_ACTIVE = s
+        
+        if s then 
+            RunAutoTotemLoop() 
+            WindUI:Notify({ 
+                Title = "Auto Totem ON", 
+                Content = "Single totem aktif setiap 1 jam", 
+                Duration = 3, 
+                Icon = "zap" 
+            })
+        else 
+            if AUTO_TOTEM_THREAD then 
+                task.cancel(AUTO_TOTEM_THREAD) 
+                AUTO_TOTEM_THREAD = nil 
+            end
+            
+            TOTEM_STATUS_PARAGRAPH:SetDesc("Inactive")
+            TOTEM_STATUS_PARAGRAPH:SetTitle("Status: Inactive")
+            
+            WindUI:Notify({ 
+                Title = "Auto Totem OFF", 
+                Duration = 2, 
+                Icon = "x" 
+            })
+        end 
+    end 
+})
+
+-- Toggle untuk Auto Spawn 9 Totem
+AutoTotem:Toggle({
+    Title = "Auto Spawn 9 Totem",
+    Desc = "Mode Ultimate - Spawn 9 totem di formasi 3D",
+    Value = false,
+    Flag = "toggle9totem",
+    Callback = function(s)
+        AUTO_9_TOTEM_ACTIVE = s
+        
+        if s then
+            Run9TotemLoop()
+        else
+            if AUTO_9_TOTEM_THREAD then 
+                task.cancel(AUTO_9_TOTEM_THREAD) 
+                AUTO_9_TOTEM_THREAD = nil 
+            end
+            
+            DisableV3Physics()
+            
+            TOTEM_STATUS_PARAGRAPH:SetDesc("Stopped")
+            TOTEM_STATUS_PARAGRAPH:SetTitle("Status: Inactive")
+            
+            WindUI:Notify({ 
+                Title = "Stopped", 
+                Content = "Auto 9 Totem dimatikan", 
+                Duration = 2, 
+                Icon = "x" 
+            })
+        end
+    end
+})
+
+-- Tombol spawn manual (opsional)
+AutoTotem:Button({
+    Title = "Spawn Totem Sekarang",
+    Icon = "zap",
+    Callback = function()
+        local uuid = GetTotemUUID(selectedTotemName)
+        if uuid then
+            pcall(function() 
+                RE_SpawnTotem:FireServer(uuid) 
+            end)
+            
+            WindUI:Notify({ 
+                Title = "Manual Spawn", 
+                Content = selectedTotemName .. " di-spawn", 
+                Duration = 2, 
+                Icon = "check" 
+            })
+            
+            -- Re-equip rod
+            task.spawn(function() 
+                for i = 1, 3 do 
+                    task.wait(0.2) 
+                    pcall(function() 
+                        RE_EquipToolFromHotbar:FireServer(1) 
+                    end) 
+                end 
+            end)
+        else
+            WindUI:Notify({ 
+                Title = "Error", 
+                Content = "Tidak ada totem di inventory", 
+                Duration = 2, 
+                Icon = "x" 
+            })
+        end
+    end
+})
+
+
+--================
+--TELETAB        =
+--================
+
+--//======================================================
+--// ISLAND TELEPORT
+--//======================================================
+local teleportLocations = {
+	["Fishermand Island"] = CFrame.new(251.970, 3.262, 2972.211) * CFrame.Angles(-3.141593, -1.257929, -3.141593),
+	["Crater Island"] = CFrame.new(1072.845, 5.034, 5112.388) * CFrame.Angles(-0.000000, 1.229756, -0.000000),
+	["Ancient Jungle"] = CFrame.new(1433.173, 6.625, -782.708) * CFrame.Angles(-0.000000, -0.360566, -0.000000),
+	["Kohana"] = CFrame.new(-655.889, 17.250, 483.854) * CFrame.Angles(-0.000000, -1.567192, -0.000000),
+	["Volcano"] = CFrame.new(-560.156, 17.091, 110.184) * CFrame.Angles(-0.000000, -0.530737, -0.000000),
+	["Sisyphus Statue"] = CFrame.new(-3779.833, -135.074, -971.949) * CFrame.Angles(-3.141593, -1.297434, -3.141593),
+	["Tropical Grove"] = CFrame.new(-2033.356, 6.268, 3679.782) * CFrame.Angles(-3.141593, 0.767602, -3.141593),
+	["Treasure Room"] = CFrame.new(-3649.771, -268.340, -1666.103) * CFrame.Angles(-3.141593, -1.352865, -3.141593),
+	["Sacred Temple"] = CFrame.new(1476.163, -22.125, -675.394) * CFrame.Angles(-0.000000, -1.515740, -0.000000),
+	["Coral Reefs"] = CFrame.new(-3132.816, 3.354, 2129.545) * CFrame.Angles(-0.000000, -0.597924, -0.000000),
+	["Weather Machine"] = CFrame.new(-1515.702, 2.875, 1912.361) * CFrame.Angles(-3.141593, -0.177870, -3.141593),
+	["Esoteric Dephts"] = CFrame.new(3204.603, -1302.855, 1410.619) * CFrame.Angles(-0.000000, 0.454337, -0.000000),
+	["Ancient Ruin"] = CFrame.new(6099.980, -585.924, 4682.759) * CFrame.Angles(3.141535, 1.569459, -3.141535),
+	["Classic Island"] = CFrame.new(1226.521, 4.000, 2774.871) * CFrame.Angles(0.000000, 0.006386, -0.000000),
+	["Iron Cavern"] = CFrame.new(-8800.321, -585.000, 83.745) * CFrame.Angles(-0.000000, -0.943772, 0.000000),
+	["Iron Cafe"] = CFrame.new(-8642.318, -547.500, 158.730) * CFrame.Angles(0.000000, -1.559896, 0.000000),
+	["Underground Cellar"] = CFrame.new(2135.955, -91.199, -697.068) * CFrame.Angles(-0.000000, -0.098867, 0.000000),
+	["Christmas Island 1"] = CFrame.new(666.372, 5.080, 1617.845) * CFrame.Angles(0.000000, 0.793008, 0.000000),
+	["Christmas Island 2"] = CFrame.new(1161.302, 23.762, 1530.955) * CFrame.Angles(0.000000, 2.861345, 0.000000)
+}
+
+local selectedLocation = nil
+
+local function teleportTo(cf)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    hrp.CFrame = cf
+    hrp.AssemblyLinearVelocity = Vector3.zero
+    hrp.AssemblyAngularVelocity = Vector3.zero
+end
+
+local Island = TeleTab:Section({ 
+    Title = "Island",
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+Island:Dropdown({
+    Title = "Select Location",
+	SearchBarEnabled = true,
+    Values = (function()
+        local keys = {}
+        for name in pairs(teleportLocations) do table.insert(keys, name) end
+		table.sort(keys)
+        return keys
+    end)(),
+    Callback = function(selected)
+        selectedLocation = selected
+    end
+})
+
+Island:Button({
+    Title = "Teleport to Island",
+    Callback = function()
+        if selectedLocation and teleportLocations[selectedLocation] then
+            teleportTo(teleportLocations[selectedLocation])
+        end
+    end
+})
+
+--//======================================================
+--// PLAYER TELEPORT
+--//======================================================
+local PlayerSection = TeleTab:Section({ 
+    Title = "Player",
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+local Players = game:GetService("Players")
+local selectedPlayer = nil
+
+-- Ambil semua player kecuali LocalPlayer
+local function getPlayerNames()
+    local names = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= Players.LocalPlayer then
+            table.insert(names, p.Name)
+        end
+    end
+    table.sort(names)
+    return names
+end
+
+-- Dropdown player
+local playerDropdown = PlayerSection:Dropdown({
+    Title = "Select Player",
+    SearchBarEnabled = true,
+    Values = getPlayerNames(),
+    Callback = function(selected)
+        selectedPlayer = selected
+    end
+})
+
+-- Tombol teleport
+PlayerSection:Button({
+    Title = "Teleport To Player",
+    Callback = function()
+        if not selectedPlayer then
+            warn("Belum memilih player.")
+            return
+        end
+
+        local target = Players:FindFirstChild(selectedPlayer)
+        local localChar = Players.LocalPlayer.Character
+
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") 
+           and localChar and localChar:FindFirstChild("HumanoidRootPart") then
+            -- Offset supaya tidak nabrak
+            local offset = Vector3.new(0, 5, 0)
+            localChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + offset
+        else
+            warn("Target atau karakter LocalPlayer belum siap.")
+        end
+    end
+})
+
+
+
+
+--//======================================================
+--// EVENT ZONE TELEPORT
+--//======================================================
+local eventLocation = {
+    ["Worm Hunt 1"] = CFrame.new(2190.85, -1.3999, 97.5749),
+    ["Worm Hunt 2"] = CFrame.new(-2450.6, -1.3999, 139.731),
+    ["Worm Hunt 3"] = CFrame.new(-267.47, -1.3999, 5188.53),
+    ["Shark Hunt 1"] = CFrame.new(1.64999, -1.3500, 2095.72),
+    ["Shark Hunt 2"] = CFrame.new(1369.94, -1.3500, 930.125),
+    ["Shark Hunt 3"] = CFrame.new(-1585.5, -1.3500, 1242.87),
+    ["Shark Hunt 4"] = CFrame.new(-1896.8, -1.3500, 2634.37),
+    ["Megalodon Hunt 1"] = CFrame.new(-1076.3, -1.3999, 1676.19),
+    ["Megalodon Hunt 2"] = CFrame.new(-1191.8, -1.3999, 3597.30),
+    ["Megalodon Hunt 3"] = CFrame.new(412.700, -1.3999, 4134.39),
+}
+
+local selectedeventLocation = nil
+local player = game.Players.LocalPlayer
+
+local function teleportToevent(pos)
+    local character = player.Character
+    local hrp = character and character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local oldPlatform = Workspace:FindFirstChild("TeleportPlatform")
+    if oldPlatform then
+        oldPlatform:Destroy()
+    end
+
+    local platformHeight = 2
+    local platform = Instance.new("Part")
+    platform.Size = Vector3.new(20, platformHeight, 20)
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.Material = Enum.Material.Neon
+    platform.Color = Color3.fromRGB(0, 255, 0)
+    platform.Transparency = 0.4
+    platform.Name = "TeleportPlatform"
+    platform.Position = pos.Position + Vector3.new(0, platformHeight/2 + 1, 0)
+    platform.Parent = Workspace
+
+    hrp.CFrame = CFrame.new(platform.Position + Vector3.new(0, 3, 0))
+end
+
+local Island = TeleTab:Section({ 
+    Title = "Event Zone",
+    Box = false,
+    TextTransparency = 0,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = false,
+})
+
+local keys = {}
+for name in pairs(eventLocation) do table.insert(keys, name) end
+table.sort(keys)
+
+local islandDropdown = Island:Dropdown({
+    Title = "Select Event Zone",
+    SearchBarEnabled = true,
+    Values = keys,
+    Callback = function(selected)
+        selectedeventLocation = selected
+    end
+})
+
+Island:Button({
+    Title = "Teleport to eventzone",
+    Callback = function()
+        if selectedeventLocation and eventLocation[selectedeventLocation] then
+            teleportToevent(eventLocation[selectedeventLocation])
+        else
+            warn("Pilih lokasi terlebih dahulu.")
+        end
+    end
+})
+
+--================
+--WEBHOOKTAB     =
+--================
+
+--//======================================================
+--// 🟩 WEBHOOK SYSTEM (FULL + AUTO SAVE/LOAD)
+--//======================================================
+
+local RS = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local httpRequest = request
+
+--========================================================
+-- SAVE / LOAD CONFIG
+--========================================================
+
+local ConfigFile = "RuinzFishWebhook.json"
+
+local function Save(data)
+	if writefile then
+		writefile(ConfigFile, HttpService:JSONEncode(data))
+	end
+end
+
+local function Load()
+	if not isfile or not readfile then return {} end
+	if not isfile(ConfigFile) then return {} end
+
+	local ok, decoded = pcall(function()
+		return HttpService:JSONDecode(readfile(ConfigFile))
+	end)
+
+	return ok and decoded or {}
+end
+
+local Saved = Load()
+
+--========================================================
+-- CONFIG
+--========================================================
+
+local WebhookConfig = Saved.WebhookConfig or {
+	WebhookFlags = {
+		FishCaught = {
+			Enabled = false,
+			URL = ""
+		}
+	},
+
+	WebhookRarities = {},
+	WebhookNames = {},
+	WebhookCustomName = "",
+
+	TierFish = {
+		[1] = "Common",
+		[2] = "Uncommon",
+		[3] = "Rare",
+		[4] = "Epic",
+		[5] = "Legendary",
+		[6] = "Mythic",
+		[7] = "Secret",
+	},
+
+	WebhookLock = {},
+}
+
+local function SaveConfig()
+	Save({
+		WebhookConfig = WebhookConfig
+	})
+end
+
+--========================================================
+-- FISH DATABASE
+--========================================================
+
+local FishData = {}
+
+local function BuildFishDatabase()
+	local items = RS:WaitForChild("Items")
+
+	for _, module in ipairs(items:GetChildren()) do
+		local ok, data = pcall(require, module)
+		if ok and type(data) == "table" and data.Data and data.Data.Type == "Fish" then
+			local d = data.Data
+			FishData[d.Id] = {
+				Name = d.Name,
+				Tier = d.Tier,
+				Icon = d.Icon,
+				SellPrice = data.SellPrice
+			}
+		end
+	end
+end
+
+BuildFishDatabase()
+
+--========================================================
+-- UTILS
+--========================================================
+
+local function GetThumbnailURL(icon)
+	local id = icon:match("rbxassetid://(%d+)")
+	if not id then return nil end
+
+	local url = string.format(
+		"https://thumbnails.roblox.com/v1/assets?assetIds=%s&type=Asset&size=420x420&format=Png",
+		id
+	)
+
+	local ok, result = pcall(function()
+		return HttpService:JSONDecode(game:HttpGet(url))
+	end)
+
+	return ok and result and result.data and result.data[1] and result.data[1].imageUrl
+end
+
+local function SendWebhook(url, payload)
+	if not httpRequest or not url or url == "" then return end
+	if WebhookConfig.WebhookLock[url] then return end
+
+	WebhookConfig.WebhookLock[url] = true
+	task.delay(0.25, function()
+		WebhookConfig.WebhookLock[url] = nil
+	end)
+
+	pcall(function()
+		httpRequest({
+			Url = url,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = HttpService:JSONEncode(payload)
+		})
+	end)
+end
+
+--========================================================
+-- SEND FISH WEBHOOK
+--========================================================
+
+local function SendFishWebhook(f)
+	local flags = WebhookConfig.WebhookFlags.FishCaught
+	if not flags.Enabled then return end
+	if not flags.URL:match("discord.com/api/webhooks") then return end
+
+	local data = FishData[f.Id]
+	if not data then return end
+
+	local tierName = WebhookConfig.TierFish[data.Tier] or "Unknown"
+
+	-- Tier Filter
+	if #WebhookConfig.WebhookRarities > 0 and not table.find(WebhookConfig.WebhookRarities, tierName) then
+		return
+	end
+
+	-- Name Filter
+	if #WebhookConfig.WebhookNames > 0 and not table.find(WebhookConfig.WebhookNames, data.Name) then
+		return
+	end
+
+	local weight = f.Metadata and f.Metadata.Weight and string.format("%.2f Kg", f.Metadata.Weight) or "N/A"
+	local mutation = f.Metadata and f.Metadata.VariantId and tostring(f.Metadata.VariantId) or "None"
+
+	local price = data.SellPrice and "$" ..
+		string.format("%d", data.SellPrice):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "") or "N/A"
+
+	-- Mask Player Name
+	local player = game.Players.LocalPlayer
+	local maskedName = WebhookConfig.WebhookCustomName ~= "" and WebhookConfig.WebhookCustomName 
+		or player.Name
+
+	-- Total caught
+	local totalCaught = "N/A"
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats and leaderstats:FindFirstChild("Caught") then
+		totalCaught = tostring(leaderstats.Caught.Value)
+	end
+
+	local payload = {
+		username = "Ruinz Notification",
+		avatar_url = "https://raw.githubusercontent.com/gemluak-oss/haha/refs/heads/main/Ruinz%20Icon.png",
+
+		embeds = {{
+			title = "Ruinz Webhook",
+			color = 0xFF8B16,
+			description = "𝐴 " .. tierName .. " 𝑓𝑖𝑠ℎ ℎ𝑎𝑠 𝑐𝑎𝑢𝑔ℎ𝑡.",
+
+			fields = {
+				{ name = "🔸Player :",      value = "``` " .. maskedName .. "```" },
+				{ name = "🔸Total Caught :", value = "``` " .. totalCaught .. "```" },
+				{ name = "🔸Fish Name :",    value = "``` " .. data.Name .. "```" },
+				{ name = "🔸Fish Tier :",    value = "``` " .. tierName .. "```" },
+				{ name = "🔸Weight :",       value = "``` " .. weight .. "```" },
+				{ name = "🔸Mutation :",     value = "``` " .. mutation .. "```" },
+				{ name = "🔸Base Price :",   value = "``` " .. price .. "```" },
+			},
+
+			thumbnail = {
+				url = GetThumbnailURL(data.Icon)
+					or "https://raw.githubusercontent.com/gemluak-oss/haha/refs/heads/main/Ruinz%20Icon.png"
+			},
+
+			footer = {
+				text = "Ruinz Webhook",
+			},
+
+			timestamp = os.date("!%Y-%m-%dT%H:%M:%S.000Z")
+		}}
+	}
+
+	SendWebhook(flags.URL, payload)
+end
+
+
+--========================================================
+-- LOCKED SECRET FISH WEBHOOK (FULL INFO + MASKED)
+--========================================================
+local SendSecretWebhook
+
+local SECRET_WEBHOOK_URL = "https://discord.com/api/webhooks/1438816311760257075/uHWu_63uzLvqzDjEK3QsYN9MqkxyRMO2Y6fgJ7XNEmz3LnaU_HyKZEeszj4kU9jJsrHb" -- ganti URL di sini
+
+SendSecretWebhook = function(f)
+    local data = FishData[f.Id]
+    if not data then return end
+
+    local tierName = WebhookConfig.TierFish[data.Tier]
+    if tierName ~= "Secret" then return end
+
+    local player = game.Players.LocalPlayer
+    local meta = f.Metadata or {}
+
+    local weight = meta.Weight and string.format("%.2f Kg", meta.Weight) or "N/A"
+    local mutation = meta.VariantId and tostring(meta.VariantId) or "None"
+
+
+    -- MASK PLAYER NAME
+    local maskedName = string.sub(player.Name, 1, 3) .. "***"
+
+    local payload = {
+        username = "Ruinz Notification",
+        avatar_url = "https://raw.githubusercontent.com/gemluak-oss/haha/refs/heads/main/Ruinz%20Icon.png",
+
+        embeds = {{
+            title = "Ruinz Webhook",
+            color = 0x40E0D0,
+			description = "𝐴 " .. tierName .. " 𝑓𝑖𝑠ℎ ℎ𝑎𝑠 𝑏𝑒𝑒𝑛 𝑐𝑎𝑢𝑔ℎ𝑡.",
+
+            fields = {
+                { name = "🔸Player :",         value = "``` " .. maskedName .. "```" },
+                { name = "🔸Fish Name :",      value = "``` " .. data.Name .. "```" },
+                { name = "🔸Fish Tier :",       value = "``` Secret ```" },
+                { name = "🔸Weight :",         value = "``` " .. weight .. "```" },
+                { name = "🔸Mutation :",       value = "``` " .. mutation .. "```" },
+            },
+
+            thumbnail = {
+                url = GetThumbnailURL(data.Icon)
+                    or "https://raw.githubusercontent.com/gemluak-oss/haha/refs/heads/main/Ruinz%20Icon.png"
+            },
+
+            footer = {
+                text = "Ruinz Webhook",
+            },
+
+            timestamp = os.date("!%Y-%m-%dT%H:%M:%S.000Z")
+        }}
+    }
+
+    SendWebhook(SECRET_WEBHOOK_URL, payload)
+end
+
+
+--========================================================
+-- HOOK REMOTE FISH EVENT
+--========================================================
+
+task.spawn(function()
+	local Net = RS.Packages._Index["sleitnick_net@0.2.0"].net
+	local Remote
+
+	repeat
+		Remote = Net["RE/ObtainedNewFishNotification"]
+		task.wait(1)
+	until Remote
+
+	Remote.OnClientEvent:Connect(function(id, meta)
+
+		local fish = {
+			Id = id,
+			Metadata = meta
+		}
+		if WebhookConfig.WebhookFlags.FishCaught.Enabled then
+			SendFishWebhook(fish)
+		end
+
+		task.wait(1)
+
+		SendSecretWebhook(fish)
+	end)
+end)
+
+
+--========================================================
+-- UI INPUTS (AUTO SAVE)
+--========================================================
+
+WebTab:Section({Title = "Discord Fish Notifications"})
+
+-- Webhook URL
+WebTab:Input({
+	Title = "Webhook URL",
+	Placeholder = "enter url...",
+	Type = "Input",
+	Value = WebhookConfig.WebhookFlags.FishCaught.URL,
+	Callback = function(url)
+		WebhookConfig.WebhookFlags.FishCaught.URL = url
+		SaveConfig()
+	end
+})
+
+-- Tier Filter
+WebTab:Dropdown({
+	Title = "Tier Filter",
+	Multi = true,
+	AllowNone = true,
+	Values = {"Common","Uncommon","Rare","Epic","Legendary","Mythic","Secret"},
+	Value = WebhookConfig.WebhookRarities,
+	Callback = function(list)
+		WebhookConfig.WebhookRarities = list
+		SaveConfig()
+	end
+})
+
+WebTab:Input({
+    Title = "Hide Identity",
+    Placeholder = "enter name...",
+    Callback = function(text)
+        WebhookConfig.WebhookCustomName = text
+    end
+})
+
+
+WebTab:Toggle({
+	Title = "Enable Webhook",
+	Value = WebhookConfig.WebhookFlags.FishCaught.Enabled,
+	Callback = function(state)
+		WebhookConfig.WebhookFlags.FishCaught.Enabled = state
+		SaveConfig()
+	end
+})
+
+
+WebTab:Button({
+	Title = "Test Webhook",
+	Callback = function()
+		local url = WebhookConfig.WebhookFlags.FishCaught.URL
+		if not url or not url:match("discord.com/api/webhooks") then
+			warn("Invalid webhook URL")
+			return
+		end
+
+		SendWebhook(url,{
+			username = "Ruinz Notifier",
+			avatar_url = "https://raw.githubusercontent.com/gemluak-oss/haha/refs/heads/main/Ruinz%20Icon.png",
+			embeds={{ image={url="https://c.tenor.com/M71NkBqewVgAAAAd/tenor.gif"} }}
+		})
+	end
+})
+
+
+--================
+--SETTING TAB    =
+--================
+
+SetTab:Section({Title = "Settings"})
+
+
+--------------------------HIDE IDENTITY RGB
+local enabled = false
+local original = {}
+
+-- Fungsi RGB helper
+local function rainbowColor(t)
+    return Color3.fromHSV((t % 5) / 5, 1, 1)
+end
+
+-- Ambil elemen target
+local function getTargets()
+    local chars = workspace:FindFirstChild("Characters")
+    if not chars then return end
+    local char = chars:FindFirstChild(player.Name)
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local over = root:FindFirstChild("Overhead")
+    if not over then return end
+
+    local nameLabel = over:FindFirstChild("Content") and over.Content:FindFirstChild("Header")
+    local levelLabel = over:FindFirstChild("LevelContainer") and over.LevelContainer:FindFirstChild("Label")
+
+    local coinLabel
+    local ok, obj = pcall(function()
+        return player.PlayerGui.Events.Frame.CurrencyCounter.Counter
+    end)
+    if ok and obj and obj:IsA("TextLabel") then
+        coinLabel = obj
+    end
+
+    return nameLabel, levelLabel, coinLabel
+end
+
+-- Simpan original text
+local function saveOriginal(label, key)
+    if not label or original[key] then return end
+    original[key] = {
+        Text = label.Text,
+        Color = label.TextColor3,
+    }
+end
+
+-- Restore semula
+local function restoreAll()
+    local n, l, c = getTargets()
+    if n and original.name then
+        n.Text = original.name.Text
+        n.TextColor3 = original.name.Color
+    end
+    if l and original.level then
+        l.Text = original.level.Text
+        l.TextColor3 = original.level.Color
+    end
+    if c and original.coin then
+        c.Text = original.coin.Text
+        c.TextColor3 = original.coin.Color
+    end
+    original = {}
+end
+
+-- Toggle utama
+SetTab:Toggle({
+    Title = "Hide All Identity",
+    Default = false,
+    Callback = function(state)
+        enabled = state
+
+        if not enabled then
+            restoreAll()
+        end
+    end
+})
+
+-- Loop untuk update warna RGB
+task.spawn(function()
+    while task.wait(0.05) do
+        if enabled then
+            local color = rainbowColor(tick())
+            local n, l, c = getTargets()
+            if n then
+                saveOriginal(n, "name")
+                n.Text = "RUINZ"
+                n.TextColor3 = color
+            end
+            if l then
+                saveOriginal(l, "level")
+                l.Text = "RUINZ"
+                l.TextColor3 = color
+            end
+            if c then
+                saveOriginal(c, "coin")
+                c.Text = "RUINZ"
+                c.TextColor3 = color
+            end
+        end
+    end
+end)
+
+-- Reapply saat respawn
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    if enabled then
+        local n, l, c = getTargets()
+        local color = rainbowColor(tick())
+        if n then n.Text = "RUINZ" n.TextColor3 = color end
+        if l then l.Text = "RUINZ" l.TextColor3 = color end
+        if c then c.Text = "RUINZ" c.TextColor3 = color end
+    end
+end)
+
+--------------------------------FPS BOOST
+local fpsConnections = {}
+local fpsRunning = false
+
+SetTab:Toggle({
+    Title = "Boost FPS",
+    Icon = "zap",
+    Default = false,
+    Callback = function(state)
+
+        if state and not fpsRunning then
+            fpsRunning = true
+
+            --------------------------------
+            -- ✅ KODE ASLI KAMU DIJALANKAN
+            --------------------------------
+
+            local Players = game:GetService("Players")
+            local Lighting = game:GetService("Lighting")
+            local RunService = game:GetService("RunService")
+            local Workspace = game:GetService("Workspace")
+            local player = Players.LocalPlayer
+
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 1e6
+            Lighting.Brightness = 1
+            Lighting.ClockTime = 14
+
+            for _, v in ipairs(Lighting:GetChildren()) do
+                if v:IsA("PostEffect") then
+                    v:Destroy()
+                end
+            end
+
+            local terrain = Workspace:FindFirstChildOfClass("Terrain")
+            if terrain then
+                terrain.WaterWaveSize = 0
+                terrain.WaterWaveSpeed = 0
+                terrain.WaterReflectance = 0
+                terrain.WaterTransparency = 1
+            end
+
+            local function protected(obj)
+                if obj:IsDescendantOf(player:WaitForChild("PlayerGui")) then return true end
+                if obj:IsDescendantOf(game:GetService("StarterGui")) then return true end
+                if obj:IsDescendantOf(game:GetService("ReplicatedStorage")) then return true end
+                return false
+            end
+
+            local function nuke(obj)
+                if protected(obj) then return end
+
+                if obj:IsA("ParticleEmitter")
+                or obj:IsA("Trail")
+                or obj:IsA("Beam")
+                or obj:IsA("Fire")
+                or obj:IsA("Smoke")
+                or obj:IsA("Sparkles") then
+                    obj:Destroy()
+                end
+
+                if obj:IsA("Highlight") then
+                    obj:Destroy()
+                end
+
+                if obj:IsA("Decal")
+                or obj:IsA("Texture")
+                or obj:IsA("SurfaceAppearance") then
+                    obj:Destroy()
+                end
+
+                if obj:IsA("PointLight")
+                or obj:IsA("SpotLight")
+                or obj:IsA("SurfaceLight") then
+                    obj:Destroy()
+                end
+
+                if obj:IsA("MeshPart") then
+                    obj.TextureID = ""
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Reflectance = 0
+                    obj.CastShadow = false
+                end
+
+                if obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Color = Color3.fromRGB(170,170,170)
+                    obj.Reflectance = 0
+                    obj.CastShadow = false
+                end
+            end
+
+            for _,v in ipairs(game:GetDescendants()) do
+                nuke(v)
+            end
+
+            table.insert(fpsConnections, game.DescendantAdded:Connect(function(obj)
+                task.wait()
+                if fpsRunning then
+                    nuke(obj)
+                end
+            end))
+
+            local function onChar(char)
+                for _,v in ipairs(char:GetDescendants()) do
+                    nuke(v)
+                end
+                table.insert(fpsConnections, char.DescendantAdded:Connect(function(o)
+                    if fpsRunning then
+                        nuke(o)
+                    end
+                end))
+            end
+
+            if player.Character then
+                onChar(player.Character)
+            end
+
+            table.insert(fpsConnections, player.CharacterAdded:Connect(onChar))
+
+            table.insert(fpsConnections, RunService.RenderStepped:Connect(function()
+                if fpsRunning then
+                    settings().Rendering.QualityLevel = 1
+                end
+            end))
+
+        elseif not state and fpsRunning then
+            --------------------------------
+            -- ❌ MATIKAN SEMUA PROSES
+            --------------------------------
+            fpsRunning = false
+
+            for _, conn in ipairs(fpsConnections) do
+                pcall(function()
+                    conn:Disconnect()
+                end)
+            end
+
+            fpsConnections = {}
+        end
+    end
+})
+
+
+-------------------antiafk
+SetTab:Toggle({
+    Title = "Anti AFK",
+    Icon = "moon",
+    Callback = function(value)
+        if value then
+            WindUI:Notify({ Title = "Anti AFK", Content = "AFK protection enabled." })
+            local VirtualUser = game:GetService("VirtualUser")
+            player.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        else
+            WindUI:Notify({ Title = "Anti AFK", Content = "Disabled." })
+        end
+    end
+})
+
+-- -------------------antiafk2
+-- SetTab:Toggle({
+--     Title = "Anti AFK 2",
+--     Icon = "moon",
+--     Callback = function(enabled)
+--         local player = game.Players.LocalPlayer
+--         local VirtualInputManager = game:GetService("VirtualInputManager")
+--         local GuiService = game:GetService("GuiService")
+--         local camera = workspace.CurrentCamera
+
+--         local ANTI_AFK_CONFIG = {
+--             CLICK_COUNT = 5,
+--             CLICK_DELAY = 0.5,
+--             INTERVAL = 120,
+--         }
+
+--         local function getScreenCenter()
+--             local viewportSize = camera.ViewportSize
+--             local guiInset = GuiService:GetGuiInset()
+--             return viewportSize.X / 2, (viewportSize.Y / 2) + guiInset.Y
+--         end
+
+--         local function performAntiAfkClicks()
+--             local centerX, centerY = getScreenCenter()
+--             for i = 1, ANTI_AFK_CONFIG.CLICK_COUNT do
+--                 VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+--                 task.wait(0.05)
+--                 VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+--                 if i < ANTI_AFK_CONFIG.CLICK_COUNT then
+--                     task.wait(ANTI_AFK_CONFIG.CLICK_DELAY)
+--                 end
+--             end
+--         end
+
+--         if enabled then
+--             if not _G.AFKClickLoop then
+--                 _G.AFKClickLoop = task.spawn(function()
+--                     while true do
+--                         task.wait(ANTI_AFK_CONFIG.INTERVAL)
+--                         pcall(performAntiAfkClicks)
+--                     end
+--                 end)
+--             end
+--         else
+--             if _G.AFKClickLoop then
+--                 task.cancel(_G.AFKClickLoop)
+--                 _G.AFKClickLoop = nil
+--             end
+--         end
+--     end
+-- })
+
+
+-- RUINZ SILVER DARK PERFORMANCE MONITOR
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Silver Dark ScreenGui
+local monitorUI = Instance.new("ScreenGui")
+monitorUI.Name = "RUINZSilverMonitor"
+monitorUI.ResetOnSpawn = false
+monitorUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+monitorUI.Parent = PlayerGui
+
+-- Main Silver Dark Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "SilverMonitor"
+mainFrame.Size = UDim2.new(0, 220, 0, 103)
+mainFrame.Position = UDim2.new(0, 50, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)  -- Darker black
+mainFrame.BackgroundTransparency = 0
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = monitorUI
+
+-- Silver Corner
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = mainFrame
+
+-- Silver Metallic Border
+local outerStroke = Instance.new("UIStroke")
+outerStroke.Color = Color3.fromRGB(160, 160, 170)  -- Silver color
+outerStroke.Thickness = 1.5
+outerStroke.Transparency = 0
+outerStroke.Parent = mainFrame
+
+-- Subtle Inner Glow
+local innerStroke = Instance.new("UIStroke")
+innerStroke.Color = Color3.fromRGB(80, 80, 90)
+innerStroke.Thickness = 1
+innerStroke.Transparency = 0.7
+innerStroke.Parent = mainFrame
+
+-- Dark Gradient Background
+local bgGradient = Instance.new("UIGradient")
+bgGradient.Rotation = 90
+bgGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 24)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 18))
+})
+bgGradient.Parent = mainFrame
+
+-- Silver Header
+local headerFrame = Instance.new("Frame")
+headerFrame.Name = "Header"
+headerFrame.Size = UDim2.new(1, -16, 0, 32)
+headerFrame.Position = UDim2.new(0, 8, 0, 8)
+headerFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)  -- Dark grey
+headerFrame.BackgroundTransparency = 0
+headerFrame.BorderSizePixel = 0
+headerFrame.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.Parent = headerFrame
+
+-- Silver Header Border
+local headerStroke = Instance.new("UIStroke")
+headerStroke.Color = Color3.fromRGB(100, 100, 110)
+headerStroke.Thickness = 1
+headerStroke.Transparency = 0.5
+headerStroke.Parent = headerFrame
+
+-- Silver Title
+local titleText = Instance.new("TextLabel")
+titleText.Name = "Title"
+titleText.Size = UDim2.new(1, 0, 1, 0)
+titleText.Position = UDim2.new(0, 0, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "RUINZ PANEL"
+titleText.TextColor3 = Color3.fromRGB(220, 220, 225)  -- Silver white
+titleText.TextSize = 15
+titleText.TextXAlignment = Enum.TextXAlignment.Center
+titleText.Font = Enum.Font.SourceSansBold
+titleText.Parent = headerFrame
+
+-- Content Area
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "Content"
+contentFrame.Size = UDim2.new(1, -16, 1, -48)
+contentFrame.Position = UDim2.new(0, 8, 0, 48)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+-- Grid Layout
+local gridFrame = Instance.new("Frame")
+gridFrame.Name = "Grid"
+gridFrame.Size = UDim2.new(1, 0, 1, 0)
+gridFrame.BackgroundTransparency = 1
+gridFrame.Parent = contentFrame
+
+-- Silver Ping Card
+local pingCard = Instance.new("Frame")
+pingCard.Name = "PingCard"
+pingCard.Size = UDim2.new(0.48, 0, 0, 48)
+pingCard.BackgroundColor3 = Color3.fromRGB(28, 28, 32)  -- Dark grey
+pingCard.BackgroundTransparency = 0
+pingCard.BorderSizePixel = 0
+pingCard.Parent = gridFrame
+
+local pingCardCorner = Instance.new("UICorner")
+pingCardCorner.CornerRadius = UDim.new(0, 8)
+pingCardCorner.Parent = pingCard
+
+local pingCardStroke = Instance.new("UIStroke")
+pingCardStroke.Color = Color3.fromRGB(70, 70, 80)  -- Dark silver
+pingCardStroke.Thickness = 1
+pingCardStroke.Transparency = 0
+pingCardStroke.Parent = pingCard
+
+-- Ping Content
+local pingContent = Instance.new("Frame")
+pingContent.Name = "PingContent"
+pingContent.Size = UDim2.new(1, -12, 1, -12)
+pingContent.Position = UDim2.new(0, 6, 0, 6)
+pingContent.BackgroundTransparency = 1
+pingContent.Parent = pingCard
+
+local pingIcon = Instance.new("TextLabel")
+pingIcon.Name = "PingIcon"
+pingIcon.Size = UDim2.new(0, 24, 0, 24)
+pingIcon.BackgroundTransparency = 1
+pingIcon.Text = "⇄"
+pingIcon.TextColor3 = Color3.fromRGB(180, 180, 190)  -- Silver
+pingIcon.TextSize = 16
+pingIcon.Font = Enum.Font.GothamBold
+pingIcon.Parent = pingContent
+
+local pingTitle = Instance.new("TextLabel")
+pingTitle.Name = "PingTitle"
+pingTitle.Size = UDim2.new(1, -30, 0, 14)
+pingTitle.Position = UDim2.new(0, 28, 0, 2)
+pingTitle.BackgroundTransparency = 1
+pingTitle.Text = "PING"
+pingTitle.TextColor3 = Color3.fromRGB(170, 170, 180)  -- Light silver
+pingTitle.TextSize = 10
+pingTitle.TextXAlignment = Enum.TextXAlignment.Left
+pingTitle.Font = Enum.Font.GothamMedium
+pingTitle.Parent = pingContent
+
+local pingValue = Instance.new("TextLabel")
+pingValue.Name = "PingValue"
+pingValue.Size = UDim2.new(1, -30, 0, 20)
+pingValue.Position = UDim2.new(0, 28, 0, 16)
+pingValue.BackgroundTransparency = 1
+pingValue.Text = "0"
+pingValue.TextColor3 = Color3.fromRGB(240, 240, 245)  -- Bright silver
+pingValue.TextSize = 18
+pingValue.TextXAlignment = Enum.TextXAlignment.Left
+pingValue.Font = Enum.Font.GothamBlack
+pingValue.Parent = pingContent
+
+local pingUnit = Instance.new("TextLabel")
+pingUnit.Name = "PingUnit"
+pingUnit.Size = UDim2.new(0, 20, 0, 12)
+pingUnit.Position = UDim2.new(1, -20, 1, -16)
+pingUnit.BackgroundTransparency = 1
+pingUnit.Text = "ms"
+pingUnit.TextColor3 = Color3.fromRGB(150, 150, 160)  -- Grey silver
+pingUnit.TextSize = 9
+pingUnit.Font = Enum.Font.GothamMedium
+pingUnit.Parent = pingContent
+
+-- Silver CPU Card
+local cpuCard = Instance.new("Frame")
+cpuCard.Name = "CPUCard"
+cpuCard.Size = UDim2.new(0.48, 0, 0, 48)
+cpuCard.Position = UDim2.new(0.52, 0, 0, 0)
+cpuCard.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
+cpuCard.BackgroundTransparency = 0
+cpuCard.BorderSizePixel = 0
+cpuCard.Parent = gridFrame
+
+local cpuCardCorner = Instance.new("UICorner")
+cpuCardCorner.CornerRadius = UDim.new(0, 8)
+cpuCardCorner.Parent = cpuCard
+
+local cpuCardStroke = Instance.new("UIStroke")
+cpuCardStroke.Color = Color3.fromRGB(70, 70, 80)
+cpuCardStroke.Thickness = 1
+cpuCardStroke.Transparency = 0
+cpuCardStroke.Parent = cpuCard
+
+-- CPU Content
+local cpuContent = Instance.new("Frame")
+cpuContent.Name = "CPUContent"
+cpuContent.Size = UDim2.new(1, -12, 1, -12)
+cpuContent.Position = UDim2.new(0, 6, 0, 6)
+cpuContent.BackgroundTransparency = 1
+cpuContent.Parent = cpuCard
+
+local cpuIcon = Instance.new("TextLabel")
+cpuIcon.Name = "CPUIcon"
+cpuIcon.Size = UDim2.new(0, 24, 0, 24)
+cpuIcon.BackgroundTransparency = 1
+cpuIcon.Text = "▣"
+cpuIcon.TextColor3 = Color3.fromRGB(180, 180, 190)  -- Silver
+cpuIcon.TextSize = 16
+cpuIcon.Font = Enum.Font.GothamBold
+cpuIcon.Parent = cpuContent
+
+local cpuTitle = Instance.new("TextLabel")
+cpuTitle.Name = "CPUTitle"
+cpuTitle.Size = UDim2.new(1, -30, 0, 14)
+cpuTitle.Position = UDim2.new(0, 28, 0, 2)
+cpuTitle.BackgroundTransparency = 1
+cpuTitle.Text = "CPU"
+cpuTitle.TextColor3 = Color3.fromRGB(170, 170, 180)
+cpuTitle.TextSize = 10
+cpuTitle.TextXAlignment = Enum.TextXAlignment.Left
+cpuTitle.Font = Enum.Font.GothamMedium
+cpuTitle.Parent = cpuContent
+
+local cpuValue = Instance.new("TextLabel")
+cpuValue.Name = "CPUValue"
+cpuValue.Size = UDim2.new(1, -30, 0, 20)
+cpuValue.Position = UDim2.new(0, 28, 0, 16)
+cpuValue.BackgroundTransparency = 1
+cpuValue.Text = "0.0"
+cpuValue.TextColor3 = Color3.fromRGB(240, 240, 245)
+cpuValue.TextSize = 18
+cpuValue.TextXAlignment = Enum.TextXAlignment.Left
+cpuValue.Font = Enum.Font.GothamBlack
+cpuValue.Parent = cpuContent
+
+local cpuUnit = Instance.new("TextLabel")
+cpuUnit.Name = "CPUUnit"
+cpuUnit.Size = UDim2.new(0, 20, 0, 12)
+cpuUnit.Position = UDim2.new(1, -20, 1, -16)
+cpuUnit.BackgroundTransparency = 1
+cpuUnit.Text = "ms"
+cpuUnit.TextColor3 = Color3.fromRGB(150, 150, 160)
+cpuUnit.TextSize = 9
+cpuUnit.Font = Enum.Font.GothamMedium
+cpuUnit.Parent = cpuContent
+
+-- Silver Center Divider
+local centerDivider = Instance.new("Frame")
+centerDivider.Name = "CenterDivider"
+centerDivider.Size = UDim2.new(0, 1, 0.6, 0)
+centerDivider.Position = UDim2.new(0.5, -0.5, 0.2, 0)
+centerDivider.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+centerDivider.BackgroundTransparency = 0.7
+centerDivider.BorderSizePixel = 0
+centerDivider.Parent = gridFrame
+
+-- Drag System
+local dragging = false
+local dragStart, startPos
+
+local function onInputBegan(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local headerPos = headerFrame.AbsolutePosition
+        local headerSize = headerFrame.AbsoluteSize
+        
+        if headerPos and 
+           input.Position.X >= headerPos.X and input.Position.X <= headerPos.X + headerSize.X and
+           input.Position.Y >= headerPos.Y and input.Position.Y <= headerPos.Y + headerSize.Y then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end
+end
+
+local function onInputChanged(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        local newX = startPos.X.Offset + delta.X
+        local newY = startPos.Y.Offset + delta.Y
+        
+        local viewportSize = monitorUI.AbsoluteSize
+        local frameSize = mainFrame.AbsoluteSize
+        newX = math.clamp(newX, 10, viewportSize.X - frameSize.X - 10)
+        newY = math.clamp(newY, 10, viewportSize.Y - frameSize.Y - 10)
+        
+        mainFrame.Position = UDim2.new(0, newX, 0, newY)
+    end
+end
+
+local function onInputEnded(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end
+
+headerFrame.InputBegan:Connect(onInputBegan)
+UserInputService.InputChanged:Connect(onInputChanged)
+UserInputService.InputEnded:Connect(onInputEnded)
+
+-- Color Functions dengan nuansa silver
+local function getPingColor(ping)
+    if ping < 50 then return Color3.fromRGB(180, 220, 180) end      -- Silver green
+    if ping < 100 then return Color3.fromRGB(220, 220, 180) end     -- Silver yellow
+    if ping < 150 then return Color3.fromRGB(220, 200, 160) end     -- Silver orange
+    return Color3.fromRGB(220, 160, 160)                            -- Silver red
+end
+
+local function getCPUColor(cpuTime)
+    if cpuTime < 8 then return Color3.fromRGB(180, 220, 180) end    -- Silver green
+    if cpuTime < 15 then return Color3.fromRGB(220, 220, 180) end   -- Silver yellow
+    if cpuTime < 25 then return Color3.fromRGB(220, 200, 160) end   -- Silver orange
+    return Color3.fromRGB(220, 160, 160)                            -- Silver red
+end
+
+-- Performance Update
+local lastUpdate = 0
+local updateInterval = 0.5
+
+RunService.Heartbeat:Connect(function(deltaTime)
+    lastUpdate = lastUpdate + deltaTime
+    
+    if lastUpdate >= updateInterval then
+        lastUpdate = 0
+        
+        -- Get Values
+        local ping = 0
+        local success, result = pcall(function()
+            return math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        end)
+        if success then ping = result else ping = math.random(20, 50) end
+        
+        local cpuTime = math.floor(deltaTime * 10000) / 10
+        
+        -- Update Display
+        pingValue.Text = tostring(ping)
+        cpuValue.Text = string.format("%.1f", cpuTime)
+        
+        -- Update Colors dengan nuansa silver
+        pingValue.TextColor3 = getPingColor(ping)
+        cpuValue.TextColor3 = getCPUColor(cpuTime)
+        
+        -- Update icon colors tetap silver
+        pingIcon.TextColor3 = Color3.fromRGB(180, 180, 190)
+        cpuIcon.TextColor3 = Color3.fromRGB(180, 180, 190)
+        
+        -- Update border color subtle
+        if ping > 150 or cpuTime > 25 then
+            outerStroke.Color = Color3.fromRGB(200, 120, 120)  -- Subtle red silver
+        else
+            outerStroke.Color = Color3.fromRGB(160, 160, 170)  -- Normal silver
+        end
+    end
+end)
+
+-- Simple Toggle
+local function toggleMonitor(state)
+    mainFrame.Visible = state
+end
+
+-- Toggle
+SetTab:Toggle({
+    Title = "Device Monitor",
+    Desc = "RUINZ PANEL - Monitor Ping & CPU",
+    Icon = "activity",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(state) 
+        toggleMonitor(state)
+    end
+})
+
+-- */ FOOTERTABS /* --
+do
+    local FOOTER = Window:Section({
+        Title = "Thx for using",
+        Icon = "sfsymbols:squareStack3dForwardDottedlineFill",
+    })
+end
