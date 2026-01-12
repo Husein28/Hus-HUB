@@ -50,9 +50,13 @@ local KeyWindow = WindUI:CreateWindow({
 
 local KeyTab = KeyWindow:Tab({ Title = "Key", Icon = "lock" })
 
-KeyTab:Section("Masukan Key Anda")
+-- Fix: Use Table for Section and capture it to add elements
+local KeySection = KeyTab:Section({ 
+    Title = "Enter THE KEY!",
+    TextSize = 18
+})
 
-KeyTab:Input({
+KeySection:Input({
     Title = "Key",
     Placeholder = "OWI",
     Callback = function(text)
@@ -60,7 +64,7 @@ KeyTab:Input({
     end
 })
 
-KeyTab:Button({
+KeySection:Button({
     Title = "Check Key",
     Callback = function()
         if KeyInput == ValidKey then
@@ -71,8 +75,6 @@ KeyTab:Button({
                 Icon = "check"
             })
             KeyVerified = true
-            -- Hapus window key biar bersih (opsional, tergantung WindUI support Destroy/Close)
-            -- KeyWindow:Destroy() atau biarkan tertimpa window baru
         else
             WindUI:Notify({
                 Title = "Failed",
