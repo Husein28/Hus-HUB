@@ -118,6 +118,14 @@ end
 print("[KeySystem] Cleanup Done. Loading Main Window...")
 task.wait(0.5)
 
+print("[KeySystem] Reloading WindUI Library...")
+-- RELOAD LIBRARY: Pastikan instance baru untuk Main Hub
+WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+WindUI:SetTheme("Native Red")
+
+print("[KeySystem] Library Reloaded. Opening Main Window...")
+task.wait(0.5)
+
 -- [[ KEY SYSTEM END ]] --
 
 local Window = WindUI:CreateWindow({
