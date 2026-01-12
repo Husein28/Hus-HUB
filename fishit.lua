@@ -40,21 +40,27 @@ local ValidKey = "OWI"
 local KeyVerified = false
 local KeyInput = ""
 
--- Create Window WITHOUT NewElements (Classic Mode)
+-- BACK TO NEWELEMENTS (Matching Main Window Architecture)
 local KeyWindow = WindUI:CreateWindow({
     Title = "Key Verification",
     Icon = "key",
     Transparent = true,
     Theme = "Native Red",
-    HideSearchBar = true
+    HideSearchBar = true,
+    NewElements = true,
+    Folder = "KeySystem"
 })
 
 local KeyTab = KeyWindow:Tab({ Title = "Key", Icon = "lock" })
 
--- In Classic mode, Section is just a Header
-KeyTab:Section("Enter THE KEY!")
+-- Important: Capture the Section object
+local KeySection = KeyTab:Section({ 
+    Title = "Enter THE KEY!",
+    TextSize = 20
+})
 
-KeyTab:Input({
+-- Attach elements to the SECTION, not the Tab
+KeySection:Input({
     Title = "Key Input",
     Placeholder = "Input The Key HERE",
     Callback = function(text)
@@ -62,7 +68,7 @@ KeyTab:Input({
     end
 })
 
-KeyTab:Button({
+KeySection:Button({
     Title = "Check Key",
     Callback = function()
         if KeyInput == ValidKey then
@@ -73,12 +79,11 @@ KeyTab:Button({
                 Icon = "check"
             })
             KeyVerified = true
-            -- Try to close key window
             pcall(function() KeyWindow:Close() end) 
         else
             WindUI:Notify({
                 Title = "Failed",
-                Content = "Key Salah! Coba lagi.",
+                Content = "Key Salah!",
                 Duration = 2,
                 Icon = "x"
             })
